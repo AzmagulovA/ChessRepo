@@ -1,0 +1,81 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\bbishop.png" />
+    <None Remove="Assets\bhorse.png" />
+    <None Remove="Assets\bking.png" />
+    <None Remove="Assets\BlackBack.png" />
+    <None Remove="Assets\BlackForward.png" />
+    <None Remove="Assets\Board.png" />
+    <None Remove="Assets\boardb.png" />
+    <None Remove="Assets\boardw.png" />
+    <None Remove="Assets\bpawn.png" />
+    <None Remove="Assets\bQueen.png" />
+    <None Remove="Assets\brook.png" />
+    <None Remove="Assets\ComputerMove.png" />
+    <None Remove="Assets\ComputerMove2.png" />
+    <None Remove="Assets\ComputerMove3.jpg" />
+    <None Remove="Assets\delete.png" />
+    <None Remove="Assets\hand.png" />
+    <None Remove="Assets\Revers.png" />
+    <None Remove="Assets\save.png" />
+    <None Remove="Assets\stockfish-windows-x86-64-avx2.exe" />
+    <None Remove="Assets\wbishop.png" />
+    <None Remove="Assets\whorse.png" />
+    <None Remove="Assets\wking.png" />
+    <None Remove="Assets\wpawn.png" />
+    <None Remove="Assets\wQueen.png" />
+    <None Remove="Assets\wrook.png" />
+    <None Remove="Assets\wrook2.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\stockfish-windows-x86-64-avx2.exe" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Stockfish.NET" Version="1.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChessEngine\ChessEngine.csproj" />
+    <ProjectReference Include="..\ChessLogic\ChessLogic.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\bbishop.png" />
+    <Resource Include="Assets\bhorse.png" />
+    <Resource Include="Assets\bking.png" />
+    <Resource Include="Assets\BlackBack.png" />
+    <Resource Include="Assets\BlackForward.png" />
+    <Resource Include="Assets\Board.png" />
+    <Resource Include="Assets\boardb.png" />
+    <Resource Include="Assets\boardw.png" />
+    <Resource Include="Assets\bpawn.png" />
+    <Resource Include="Assets\bQueen.png" />
+    <Resource Include="Assets\brook.png" />
+    <Resource Include="Assets\ComputerMove.png" />
+    <Resource Include="Assets\ComputerMove2.png" />
+    <Resource Include="Assets\ComputerMove3.jpg" />
+    <Resource Include="Assets\delete.png" />
+    <Resource Include="Assets\hand.png" />
+    <Resource Include="Assets\Revers.png" />
+    <Resource Include="Assets\save.png" />
+    <Resource Include="Assets\wbishop.png" />
+    <Resource Include="Assets\whorse.png" />
+    <Resource Include="Assets\wking.png" />
+    <Resource Include="Assets\wpawn.png" />
+    <Resource Include="Assets\wQueen.png" />
+    <Resource Include="Assets\wrook.png" />
+    <Resource Include="Assets\wrook2.png" />
+  </ItemGroup>
+
+</Project>

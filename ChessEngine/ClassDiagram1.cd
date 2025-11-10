@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="ChessEngine.Core.Stockfish">
+    <Position X="4" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>gEQAICAAAAAAQIAAAAAQAIAIAAAIAAAggAAAAAAEAAI=</HashCode>
+      <FileName>Core\Stockfish.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="MaxTriesException" />
+    </ShowAsAssociation>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="ChessEngine.NET.StockfishProcess">
+    <Position X="7.5" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AABAAAAAACAAAAAIAAAAAAAAAIQAAAAAAAQAAAAAAAA=</HashCode>
+      <FileName>Core\StockfishProcess.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ChessEngine.Exceptions.MaxTriesException">
+    <Position X="4" Y="7" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Exceptions\MaxTriesException.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="ChessEngine.Models.Settings">
+    <Position X="5.75" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAACIAIAAAAAAAAAAgAAAAAAQEAAACAABAAA=</HashCode>
+      <FileName>Models\Settings.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
