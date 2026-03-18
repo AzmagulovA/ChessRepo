@@ -1,0 +1,393 @@
+﻿<Window x:Class="ChessUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:cm="clr-namespace:System.ComponentModel;assembly=System"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ChessUI"
+        mc:Ignorable="d"
+        Title="ChessAnalyser" 
+        SizeToContent="Height"
+        Width="1000"
+        WindowStartupLocation="CenterScreen"
+        Background="#ECEBE9"
+        KeyDown="Window_Keydown"
+        >
+    <Window.Resources>
+        <cm:BackgroundWorker x:Key="backgroundWorker"></cm:BackgroundWorker>
+    </Window.Resources>
+    <!--  WindowState="Maximized" -->
+    <StackPanel>
+        <Menu Height="25" VerticalAlignment="Top">
+            <MenuItem Header="Файл">
+                <MenuItem Header="Новый" 
+                          Click="NewFileMake_Click"
+                          >
+                </MenuItem>
+                <MenuItem Header="Сохранить" 
+                          Click="SaveButton_Click"
+                          >
+                </MenuItem>
+
+                <MenuItem Header="Задать позицию" 
+                          Click="NewPositionSet_Click"
+                          >
+                </MenuItem>
+                <MenuItem Header="Открыть" 
+                           Click="OpenNewFile_Click"
+                          >
+                </MenuItem>
+            </MenuItem>
+        </Menu>
+        <Grid >
+            <Grid.RowDefinitions>
+                <RowDefinition Height="0.15*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="0.15*"/>
+            </Grid.RowDefinitions>
+                    
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="0.15*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="0.05*"/>
+                <ColumnDefinition Width="0.5*"/>
+                <ColumnDefinition Width="0.15*"/>
+            </Grid.ColumnDefinitions>
+
+            <Viewbox Grid.Row="1" Grid.Column="1">
+                <Grid x:Name="BoardGreed"
+              Width="800"
+              Height="800"
+              MouseDown="BoardGrid_MouseDown">
+                    <Grid.Background>
+                        <ImageBrush ImageSource="Assets/boardw.png"/>
+                    </Grid.Background>
+                    <UniformGrid x:Name="HighLightGrid"
+                        Rows="8"
+                        Columns="8" >
+                    </UniformGrid>
+                    <UniformGrid x:Name="PieceGrid"
+                         Rows="8"
+                         Columns="8"
+                         RenderOptions.BitmapScalingMode="HighQuality">
+                    </UniformGrid>
+
+                    <ContentControl x:Name="MenuContainer"/>
+
+                </Grid>
+            </Viewbox>
+
+            <Border
+                 Grid.Row="1"
+                    Grid.Column="3"
+                    Style ="{StaticResource BorderStyle}">
+                <Grid  x:Name ="RightPanel"
+             Grid.Column="3" 
+             Grid.Row="1"
+             Background="White">
+                    <!--  ShowGridLines="True" -->
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="8*"/>
+                        <RowDefinition Height="100"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock  Grid.Row="0"
+  VerticalAlignment="Center"
+  HorizontalAlignment="Center"
+  Style="{StaticResource TextStyle}"
+  FontWeight="Bold"
+  FontSize = "18">
+         Stockfish 17
+
+                    </TextBlock>
+
+                    <Border BorderThickness="1" BorderBrush="DarkGray" 
+             Grid.Row="0">
+
+                    </Border>
+                    <Border BorderThickness="1" BorderBrush="DarkGray" 
+                            MaxHeight="350"
+                 Grid.Row="2">
+                        <ScrollViewer VerticalScrollBarVisibility ="Auto"
+                         >
+                            <WrapPanel x:Name="AnalysWrapPanel">
+                                
+                            </WrapPanel>
+                        </ScrollViewer>
+                    </Border>
+
+
+                    <Grid x:Name="BestMoves"
+             Grid.Row="1"
+            >
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Button x:Name="First"
+                                Grid.Row="0"
+                 Content="TopButton"
+                 MouseEnter="MouseEnter"
+                 MouseLeave="MouseLeave"
+                 Click ="MouseClick"
+                 >
+                        </Button>
+                        <Button x:Name="Second"
+                                Grid.Row="1"
+             DockPanel.Dock="Top"
+             Content="CenterButton"
+             MouseEnter="MouseEnter"
+             MouseLeave="MouseLeave"
+             Click ="MouseClick"
+                 >
+                        </Button>
+
+                        <Button x:Name="Third"
+                                Grid.Row="2"
+             DockPanel.Dock="Bottom"
+                 Content="BottomButton"
+                 MouseEnter="MouseEnter"
+                 MouseLeave="MouseLeave"
+                 Click ="MouseClick"
+                 >
+                        </Button>
+
+
+
+                    </Grid>
+                    <DockPanel  x:Name="CommentPanel"
+         Grid.Row="3"
+         LastChildFill="True">
+                        <Border BorderThickness="1" BorderBrush="DarkGray" DockPanel.Dock="Top" >
+                            <TextBlock 
+             TextAlignment="Center"
+             Text="Комментарий:" 
+             Style="{StaticResource TextStyle}"
+             Background="White" Width="245"/>
+                        </Border>
+
+
+
+                        <TextBox 
+                 x:Name="CommentTextBox"
+                 VerticalScrollBarVisibility ="Auto"
+                 TextWrapping="Wrap"
+                 DockPanel.Dock="Bottom"
+                 TextChanged="CommentTextBox_Changed"
+                 >
+                            <TextBox.Style>
+                                <Style TargetType="TextBox" xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                                    <Style.Resources>
+                                        <VisualBrush x:Key="CueBannerBrush" AlignmentX="Left" AlignmentY="Center" Stretch="None">
+                                            <VisualBrush.Visual>
+                                                <Label Content="Коммментарий" Foreground="LightGray" />
+                                            </VisualBrush.Visual>
+                                        </VisualBrush>
+                                    </Style.Resources>
+
+                                    <Style.Triggers>
+                                        <Trigger Property="Text" Value="{x:Static sys:String.Empty}">
+                                            <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
+                                        </Trigger>
+                                        <Trigger Property="Text" Value="{x:Null}">
+                                            <Setter Property="Background" Value="{StaticResource CueBannerBrush}" />
+                                        </Trigger>
+                                        <Trigger Property="IsKeyboardFocused" Value="True">
+                                            <Setter Property="Background" Value="White" />
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBox.Style>
+                        </TextBox>
+                    </DockPanel>
+
+                    <DockPanel  x:Name="StockfishPanel"
+             Grid.Row="0"
+             LastChildFill="True"
+                 Visibility="Hidden"
+                 >
+                        <CheckBox x:Name="StockfishChecker"
+                      IsChecked="True"
+             DockPanel.Dock="Left"
+                 Content="Stockfish">
+
+                        </CheckBox>
+                        <Label x:Name="Ocenka"
+             DockPanel.Dock="Right"
+                 Content="NotStockfish"
+                >
+
+                        </Label>
+                    </DockPanel>
+
+                </Grid>
+
+            </Border>
+           
+            <Grid  x:Name ="LowPanel" 
+                      Grid.Column="1" 
+                      Grid.Row="2" 
+                      Height="200">
+                
+                    <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="0.162*"/>
+                    <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="5*"/>
+                    <RowDefinition Height="3*"/>
+                </Grid.RowDefinitions>
+                <Border  Style="{StaticResource BorderStyle}"
+                        Grid.Column="2"
+                        Grid.Row="1"
+                       >
+                    <Viewbox>
+                        <TextBox  x:Name="FENTextBox"
+                                  IsReadOnly="True"
+
+                              Style="{StaticResource TextBoxStyle}"
+                              >
+                        </TextBox>
+                    </Viewbox>
+                </Border>
+
+
+                <Border Style="{StaticResource BorderStyle}"
+                        Grid.Column="2" 
+                        Grid.Row="3" 
+                        >
+                    <TextBox x:Name="PGNTextBox"
+                                AcceptsReturn ="True"
+                                IsReadOnly="True"
+                                Height="Auto"
+                                TextWrapping ="Wrap"
+                                VerticalScrollBarVisibility="Auto"
+                                FontSize="15" 
+                                >
+                    </TextBox>
+                </Border>
+                    
+                <TextBlock Grid.Column="0" Grid.Row="1"
+                           VerticalAlignment="Center"
+                           HorizontalAlignment="Center"
+                           Style="{StaticResource TextStyle}"
+                           FontWeight="Bold"
+                           FontSize = "18">
+                    Fen
+
+                </TextBlock>
+                    
+                <TextBlock Grid.Column="0" Grid.Row="3"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Style="{StaticResource TextStyle}"
+                            FontWeight="Bold"
+                            FontSize = "18">
+                    PGN
+
+                </TextBlock>
+
+            </Grid>
+
+            <Grid  x:Name ="ButtonPanel" 
+                    Grid.Column="3" 
+                    Grid.Row="2" 
+                    Height="200"
+                   >
+                <!--  ShowGridLines="True" -->
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="0.15*"/>
+                    <RowDefinition Height="0.25*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="1"
+                      >
+                    <!--  ShowGridLines="True" -->
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="Revers"
+                            Grid.Column="0"
+                            Height="30"
+                            ToolTip="Переворот доски"
+                            Width="30"
+                            Click="Revers_Click">
+                        <StackPanel>
+                            <Image Source="Assets/Revers.png" 
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </StackPanel>
+
+                    </Button>
+
+                    <Button x:Name="ComputerMoveButton"
+                            Grid.Column="1"
+                            Height="30"
+                            ToolTip="Выполнить лучший ход"
+                            Width="30" Margin="5,3,5,0" VerticalAlignment="Top"
+                            Click="ComputerMoveButton_Click">
+                        <StackPanel>
+                            <Image Source="Assets/ComputerMove2.png" 
+                            RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="SaveButton"
+                            Grid.Column="2"
+                            ToolTip="Сохранить"
+                            Height="30"
+                            Width="30"
+                            Click="SaveButton_Click"
+                            
+                            >
+                        <StackPanel>
+                            <Image Source="Assets/save.png" 
+                                RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="Back"
+                            Grid.Column="4"
+                            Height="30"
+                            Width="30"
+                            ToolTip="Назад"
+                            Click="BackButton_Click">
+                        <StackPanel>
+                            <Image Source="Assets/BlackBack.png" 
+                                    RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </StackPanel>
+                    </Button>
+
+                    <Button x:Name="Forward"
+                            Grid.Column="5"
+                            Height="30"
+                            ToolTip="Вперед"
+                            Width="30"
+                            Click="ForwardButton_Click">
+                        <StackPanel>
+                            <Image Source="Assets/BlackForward.png" 
+                                RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </StackPanel>
+                    </Button>
+
+                </Grid>
+            </Grid>
+
+            <Viewbox Grid.Column="0" 
+                    Grid.Row="0" 
+                    Height="25"   />
+
+        </Grid>
+    </StackPanel>
+
+</Window>
