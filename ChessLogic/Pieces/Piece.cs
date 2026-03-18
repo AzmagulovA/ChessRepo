@@ -46,6 +46,24 @@ namespace ChessLogic
                 return piece!=null && piece.Type == PieceType.King;
             });
         }
+
+        public static Piece FromCharToPiece(char ch)
+        {
+            Piece piece;
+            Player pieceColor = char.IsLower(ch) ? Player.Black : Player.White;
+            switch (char.ToLower(ch))
+            {
+                case 'p': piece = new Pawn(pieceColor); break;
+                case 'b': piece = new Bishop(pieceColor); break;
+                case 'n': piece = new Knight(pieceColor); break;
+                case 'r': piece = new Rook(pieceColor, true); break;//изначально указываем что ладьи двигались
+                case 'q': piece = new Queen(pieceColor); break;
+                case 'k': piece = new King(pieceColor, true);break;
+                default: piece = null; break;
+            }
+            return piece;
+        }
+
         public override string ToString()
         {
             String typePiece = Type switch

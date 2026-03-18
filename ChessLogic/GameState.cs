@@ -29,18 +29,18 @@ namespace ChessLogic
 
         public void GameStateFromStr(String textFromFile)
         {
-            string fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-            string[] moves = new string[0] ;
-            string[] lines = textFromFile.Split(new char[] { '\n' });//строки текста
+            string fen = FenNotation.StartPosition;
+            string[] moves = Array.Empty<string>();
+            string[] lines = textFromFile.Split(['\n']);//строки текста
             foreach (string line in lines)
             {
                 if (line.Length!=0)
                 {
-                    string[] words = line.Split(new char[] { ' ' });//слова строки
+                    string[] words = line.Split([' ']);//слова строки
                     if (words[0] == "[FEN")//если первое слово - fen
                     {
-                        fen = line.Split(new char[] { '\"' })[1];
-                        analysMove.FenAfterMove = fen;//начальное положение
+                        fen = line.Split(['\"'])[1];
+                        analysMove.FenAfterMove.Position = fen;//начальное положение
                     }
                     if (line[0] == '1')//проверка на начало анализа
                     {
@@ -54,7 +54,7 @@ namespace ChessLogic
             CurrentBoard = Board.Initial();
             WatchFromWhite = true;
             analysMove = new AnalysMove();
-            analysMove.FenAfterMove = fen;
+            analysMove.FenAfterMove.Position = fen;
             List<int> chronologyOfNumberMoves = new List<int>();
             List<Player> chronologyOfPlayers = new List<Player>();
             FromFenToGameBoard();//инициализация начальной позиции
@@ -75,7 +75,7 @@ namespace ChessLogic
                             {
                                 chronologyOfNumberMoves.Add(analysMove.Number);//запоминаем номер последнего хода основного варианта(к нему надо будет затем вернуться)
                                 chronologyOfPlayers.Add(CurrentPlayer);
-                                analysMove = analysMove.LastMove;//смотрим ход от которого идет разветвление
+                                analysMove = analysMove.PreviousMove;//смотрим ход от которого идет разветвление
                                 CurrentPlayer = CurrentPlayer.Opponent();
                                 FromFenToGameBoard();
                             }
@@ -364,9 +364,9 @@ namespace ChessLogic
         {
             string res="";
             AnalysMove current = this.analysMove;
-            while (current.LastMove != null)//возвращаемся к первому элементу
+            while (current.PreviousMove != null)//возвращаемся к первому элементу
             {
-                current = current.LastMove;
+                current = current.PreviousMove;
             }
             if (!current.WhiteMove())//Ход черных
             {
@@ -652,9 +652,8 @@ namespace ChessLogic
         }
         public void FromFenToGameBoard()
         {
-            // rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
             
-            string sb = analysMove.FenAfterMove;
+            string sb = analysMove.FenAfterMove.Position;
             Board board = new Board();
             Player current = new Player();
             int counterRow = 0;
@@ -834,7 +833,7 @@ namespace ChessLogic
 
         private void UpdateStateString()
         {
-            analysMove.FenAfterMove = new StateString(CurrentPlayer, CurrentBoard, WatchFromWhite).ToString();
+            analysMove.FenAfterMove.Position = new StateString(CurrentPlayer, CurrentBoard, WatchFromWhite).ToString();
 
            
         }

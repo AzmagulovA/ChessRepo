@@ -280,7 +280,7 @@ namespace ChessUI
 
         private void FromFENToPosition()//если вводится новая нотация, то меняется всё состояние игры
         {
-            gameState.analysMove.FenAfterMove = FENTextBox.Text;
+            gameState.analysMove.FenAfterMove.Position = FENTextBox.Text;
             gameState.FromFenToGameBoard();
             DrawBoard(gameState.CurrentBoard);
         }
@@ -325,9 +325,9 @@ namespace ChessUI
         private void BackButton_Click(object sender, RoutedEventArgs e)//кнопка возврата к предыдущему ходу
         {
 
-            if (gameState.analysMove.LastMove != null)//смотрим предыдущий ход 
+            if (gameState.analysMove.PreviousMove != null)//смотрим предыдущий ход 
             { 
-                gameState.analysMove = gameState.analysMove.LastMove;
+                gameState.analysMove = gameState.analysMove.PreviousMove;
                 gameState.CheckForGameOver();
                 FillAllInformationAboutMove();
             }
@@ -347,9 +347,9 @@ namespace ChessUI
             AnalysWrapPanel.Children.Clear();
 
             AnalysMove startAnalysMove = gameState.analysMove;
-            while (startAnalysMove.LastMove != null)//возвращаемся к первому элементу
+            while (startAnalysMove.PreviousMove != null)//возвращаемся к первому элементу
             {
-                startAnalysMove = startAnalysMove.LastMove;
+                startAnalysMove = startAnalysMove.PreviousMove;
             }
             AddBranch(startAnalysMove);
         }
@@ -368,8 +368,7 @@ namespace ChessUI
                         button.Background = System.Windows.Media.Brushes.White;
                         button.BorderBrush = System.Windows.Media.Brushes.White;
                         button.Content = futureMove.MoveName;//печатаем его
-                        button.Name = "b"+futureMove.GetNumber().ToString();
-                        //button.Content = futureMove.GetNumber().ToString();
+                        button.Name = "b" + futureMove.GetNumber();
                         button.Click += AnalysMoveButton_Click;
                         AnalysWrapPanel.Children.Add(button);
                         AddBranch(futureMove);//переходим к его предку
@@ -389,8 +388,7 @@ namespace ChessUI
                         Button button = new Button();
                         button.Background = System.Windows.Media.Brushes.White;
                         button.BorderBrush = System.Windows.Media.Brushes.White;
-                        button.Name = "b"+futureMove.GetNumber().ToString(); 
-                       // button.Content = futureMove.GetNumber().ToString();
+                        button.Name = "b" + futureMove.GetNumber();
                         button.Click += AnalysMoveButton_Click;
                         button.Content = futureMove.MoveName;//печатаем его
                         AnalysWrapPanel.Children.Add(button);
@@ -531,13 +529,6 @@ namespace ChessUI
         {
             List<List<string>> Text = null;
             Text = await Task.Run(() => GetBestMoves());//передача токена в задачу, которая может быть отменена
-            /*if (Text.Count<3)
-            {
-                this.First.Content = "";
-                this.Second.Content = "";
-                this.Third.Content = "";
-                BestMovesButtonsEnabled();
-            }*/
             while (Text.Count>3)//оставляем в коллекции только 3 лучших хода
             {
                 Text.RemoveAt(0);
@@ -605,7 +596,7 @@ namespace ChessUI
         {
             try
             {
-                return stockfish.GetBestMoves(gameState.analysMove.FenAfterMove);
+                return stockfish.GetBestMoves(gameState.analysMove.FenAfterMove.Position);
             }
             catch
             {
@@ -742,17 +733,17 @@ namespace ChessUI
             if (path!="")
             {
                 AnalysMove currentMove = gameState.analysMove;
-                while (currentMove.LastMove != null)//переход к первому ходу партии
+                while (currentMove.PreviousMove != null)//переход к первому ходу партии
                 {
-                    currentMove = currentMove.LastMove;
+                    currentMove = currentMove.PreviousMove;
                 }
-                if (currentMove.FENIsStart())//если начальная позиция
+                if (FenNotation.IsStartPosition(currentMove.FenAfterMove.Position))//если начальная позиция
                 {
                     System.IO.File.WriteAllText(path, PGNTextBox.Text);
                 }
                 else//если нет, то записываем в файл позицию с которой всё начиналось
                 {
-                    string startFEN = currentMove.FenAfterMove;
+                    string startFEN = currentMove.FenAfterMove.Position;
                     System.IO.File.WriteAllText(path, string.Empty);
                     System.IO.File.AppendAllText(path, "[Variant \"From Position\"]\n");
                     startFEN = "[FEN \"" + startFEN + "\"]\n";

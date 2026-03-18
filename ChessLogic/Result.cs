@@ -46,16 +46,16 @@ namespace ChessLogic
                 case EndReason.Checkmate:
                     break;
                 case EndReason.InsufficientMaterial:
-                    res = res + " Недостаточно материала для победы.";
+                    string.Concat(res," Недостаточно материала для победы.");
                     break;
                 case EndReason.FiftyMoveRule:
-                    res = res + " Правило 50 ходов.";
+                    string.Concat(res, " Правило 50 ходов.");
                     break;
                 case EndReason.Stalemate:
-                    res = res + " Пат.";
+                    string.Concat(res, " Пат.");
                     break;
                 case EndReason.ThreefoldRepetition:
-                    res = res + " Троекратное повторение позиции.";
+                    string.Concat(res, " Троекратное повторение позиции.");
                     break;
             }
             return res; ;

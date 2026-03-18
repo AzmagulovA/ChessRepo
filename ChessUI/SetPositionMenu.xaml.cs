@@ -26,7 +26,6 @@ namespace ChessUI
 
         Board Board = Board.Initial();
         Position from;
-        Position to;
         bool WatchFromWhite = true;
         Player CurrentPlayer = Player.White;
         bool OptionIsSelected = false;

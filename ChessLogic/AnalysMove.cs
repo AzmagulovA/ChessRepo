@@ -10,13 +10,13 @@ namespace ChessLogic
 {
     public class AnalysMove
     {
-        public string FenAfterMove { get; set; }//Fen-нотация 
+        public FenNotation FenAfterMove { get; set; }//Fen-нотация 
         public string MoveName { get; set; }//имя 
         public static int Counter = 0;
         public int Number = 0;
-        public int MoveNumb;
-        public AnalysMove LastMove { get; set; } = null;// ссылка на предыдущий ход
-        public List<AnalysMove> NextMoves { get; set; } = new List<AnalysMove>();//ссылки на следующие ходы ObservableCollection??? - оповещение внешних объектов об измененнии
+        public int MoveNumb { get; set; }
+        public AnalysMove PreviousMove;// ссылка на предыдущий ход
+        public List<AnalysMove> NextMoves;//ссылки на следующие ходы 
 
         public string UserComment = "";
 
@@ -25,55 +25,49 @@ namespace ChessLogic
 
         public AnalysMove()
         {
-            FenAfterMove = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            FenAfterMove = new FenNotation();
             MoveNumb = 1;
             MoveName = string.Empty;
             NextMoves = new List<AnalysMove>();
             Counter++;
             Number = Counter;
-            LastMove = null;
-            LastFrom = null;
-            LastTo = null;
         }
         public AnalysMove(string FEN)
         {
-            FenAfterMove = FEN;
-             MoveNumb = 1;
+            FenAfterMove = new FenNotation(FEN);
+            MoveNumb = 1;
             MoveName = string.Empty;
             NextMoves = new List<AnalysMove>();
             Counter++;
             Number = Counter;
-            LastMove = null;
-            LastFrom = null;
-            LastTo = null;
         }
-        public int GetNumber()
+        public string GetNumber()
         {
-            return Number;
+            return Number.ToString();
         }
         public AnalysMove(string moveName, AnalysMove lastMove, List<AnalysMove> nextMoves, Position lastFrom, Position lastTo, int moveNumb)
         {
-            FenAfterMove = " ";
+            FenAfterMove = new FenNotation();
             Counter++;
             Number = Counter;
             MoveName = moveName;
             NextMoves = nextMoves;
-            LastMove = lastMove;
+            PreviousMove = lastMove;
             LastFrom = lastFrom;
             LastTo = lastTo;
             MoveNumb = moveNumb;
         }
         public bool WhiteMove()
         {
-            return FenAfterMove[FenAfterMove.IndexOf(" ") + 1] == 'w';//ход из fen
+            return FenAfterMove.IsWhiteMove;
         }
         public string PrintBranch()
         {
-            string res = "";
             bool mainOpt = true;
             AnalysMove mainBranch = null;
             if (NextMoves.Count > 0) //если есть последующие ходы
             {
+                string res = "";
                 foreach (AnalysMove futureMove in NextMoves)//проходимся по каждому из них
                 {
                     if (NextMoves.Count == 1)
@@ -95,61 +89,42 @@ namespace ChessLogic
                 if (mainBranch != null) res = res + mainBranch.PrintBranch();
 
             }
-            return res;
+            return string.Empty;
         }
         public string PrintMove()
         {
-            string res = "";
-
-            res = res + MoveName;
-
-            if (UserComment != "")//если не пусто
-            {
-                res = res + " {" + UserComment + "} ";
-            }
-
-            return res;
-        }
-        public AnalysMove SearchMove(int Numb)
-        {
-            AnalysMove res = this;
-
-            while (res.LastMove != null)//возвращаемся к первому элементу
-            {
-                res = res.LastMove;
-            }
-            res = res.SearchInBranch(Numb);
-            return res;
-        }
-        public AnalysMove SearchInBranch(int Numb)
-        {
-            AnalysMove res = this;
-
-            if (res.Number == Numb)
-            {
-                return res;
-            }
+            if (string.IsNullOrEmpty(UserComment))//если не пусто
+                return MoveName;
             else
-            {
-                if (res.NextMoves.Count != 0)
-                {
-                    foreach (AnalysMove Moves in res.NextMoves)
-                    {
-                        res = Moves.SearchInBranch(Numb);
-                        if (res.Number == Numb)
-                        {
-                            return res;
-                        }
-
-                    }
-                }
-            }
-            return res;
+                return string.Concat(MoveName, " {" + UserComment + "} ");
         }
-        public bool FENIsStart()
+
+        public AnalysMove SearchMove(int numb)
         {
-            return FenAfterMove == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            AnalysMove root = this;
+
+            while (root.PreviousMove != null)
+            {
+                root = root.PreviousMove;
+            }
+
+            return root.SearchInBranch(numb);
         }
 
+        public AnalysMove SearchInBranch(int numb)
+        {
+            if (Number == numb)
+                return this;
+
+            for (int i = 0; i < NextMoves.Count; i++)
+            {
+                AnalysMove foundMove = NextMoves[i].SearchInBranch(numb);
+
+                if (foundMove != null)
+                    return foundMove;
+            }
+
+            return null;
+        }
     }
 }

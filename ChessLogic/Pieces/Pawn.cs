@@ -11,10 +11,18 @@ namespace ChessLogic
         public override PieceType Type => PieceType.Pawn;//override - переназначенный тип базового класса
         public override Player Color { get; set; }
 
-        public bool WatchFromWhite;
+        public bool WatchFromWhite = true;
 
         private readonly Direction forward;
-        public Pawn(Player color, bool watchFromWhite) 
+
+        public Pawn(Player color)
+        {
+            Color = color;
+            if (WatchFromWhite) forward = color == Player.White ? Direction.North : Direction.South;//если со стороны белых, то белые вверх
+            else forward = color == Player.White ? Direction.South : Direction.North;//если со стороны чёрных, то белые вниз
+        }
+
+        public Pawn(Player color, bool watchFromWhite = true) 
         {
             Color = color;
             WatchFromWhite = watchFromWhite;
