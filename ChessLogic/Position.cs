@@ -10,6 +10,11 @@ namespace ChessLogic
     {  
         public int Row { get; }
         public int Column { get; }
+        public Position()
+        {
+            Row = 0;
+            Column = 0;
+        }
         public Position(int row, int column)
         {
             Row = row;
@@ -30,6 +35,11 @@ namespace ChessLogic
             return obj is Position position &&
                    Row == position.Row &&
                    Column == position.Column;
+        }
+
+        public bool IsPromotionRow()
+        {
+            return Row == 0 || Row == 7;
         }
 
         public override int GetHashCode()//определяем hashCode для использования в качестве ключа в словаре

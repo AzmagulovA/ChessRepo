@@ -13,7 +13,6 @@ namespace ChessLogic
         public bool HasMoved { get; set; } = false;// 
 
         public abstract Piece Copy();
-        public abstract Piece ReversCopy();
 
         public abstract IEnumerable<Move> GetMoves(Position from, Board board);
 

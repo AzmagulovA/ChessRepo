@@ -10,7 +10,7 @@ namespace ChessLogic
 {
     public class Board
     {
-        public bool BoardFromWhite = true;//переменная для отображения доски(изначально со стороны белых)
+        public bool BoardFromWhite = GameState.WatchFromWhite;//переменная для отображения доски(изначально со стороны белых)
 
         private readonly Piece[,] pieces = new Piece[8, 8];
 
@@ -55,38 +55,38 @@ namespace ChessLogic
             this[0, 1] = new Knight(Player.Black);
             this[0, 2] = new Bishop(Player.Black);
             this[0, 3] = new Queen(Player.Black);
-            this[0, 4] = new King(Player.Black, BoardFromWhite);
+            this[0, 4] = new King(Player.Black);
             this[0, 5] = new Bishop(Player.Black);
             this[0, 6] = new Knight(Player.Black);
             this[0, 7] = new Rook(Player.Black);
 
-            this[1, 0] = new Pawn(Player.Black, BoardFromWhite);
-            this[1, 1] = new Pawn(Player.Black, BoardFromWhite);
-            this[1, 2] = new Pawn(Player.Black, BoardFromWhite);
-            this[1, 3] = new Pawn(Player.Black, BoardFromWhite);
-            this[1, 4] = new Pawn(Player.Black, BoardFromWhite);
-            this[1, 5] = new Pawn(Player.Black, BoardFromWhite);
-            this[1, 6] = new Pawn(Player.Black, BoardFromWhite);
-            this[1, 7] = new Pawn(Player.Black, BoardFromWhite);
+            this[1, 0] = new Pawn(Player.Black);
+            this[1, 1] = new Pawn(Player.Black);
+            this[1, 2] = new Pawn(Player.Black);
+            this[1, 3] = new Pawn(Player.Black);
+            this[1, 4] = new Pawn(Player.Black);
+            this[1, 5] = new Pawn(Player.Black);
+            this[1, 6] = new Pawn(Player.Black);
+            this[1, 7] = new Pawn(Player.Black);
 
 
             this[7, 0] = new Rook(Player.White);
             this[7, 1] = new Knight(Player.White);
             this[7, 2] = new Bishop(Player.White);
             this[7, 3] = new Queen(Player.White);
-            this[7, 4] = new King(Player.White, BoardFromWhite);
+            this[7, 4] = new King(Player.White);
             this[7, 5] = new Bishop(Player.White);
             this[7, 6] = new Knight(Player.White);
             this[7, 7] = new Rook(Player.White);
 
-            this[6, 0] = new Pawn(Player.White, BoardFromWhite);
-            this[6, 1] = new Pawn(Player.White, BoardFromWhite);
-            this[6, 2] = new Pawn(Player.White, BoardFromWhite);
-            this[6, 3] = new Pawn(Player.White, BoardFromWhite);
-            this[6, 4] = new Pawn(Player.White, BoardFromWhite);
-            this[6, 5] = new Pawn(Player.White, BoardFromWhite);
-            this[6, 6] = new Pawn(Player.White, BoardFromWhite);
-            this[6, 7] = new Pawn(Player.White, BoardFromWhite);
+            this[6, 0] = new Pawn(Player.White);
+            this[6, 1] = new Pawn(Player.White);
+            this[6, 2] = new Pawn(Player.White);
+            this[6, 3] = new Pawn(Player.White);
+            this[6, 4] = new Pawn(Player.White);
+            this[6, 5] = new Pawn(Player.White);
+            this[6, 6] = new Pawn(Player.White);
+            this[6, 7] = new Pawn(Player.White);
         }
         public static bool IsInside(Position pos)
         {
@@ -385,12 +385,12 @@ namespace ChessLogic
                     {
                         if (NewBoard[i, j].Type == PieceType.Pawn)//если пешка, то идет в противоположном направлении
                         {
-                            Pawn ReversPawn = new Pawn(NewBoard[i, j].Color, WatchFromWhite, NewBoard[i, j].HasMoved);
+                            Pawn ReversPawn = new Pawn(NewBoard[i, j].Color,  NewBoard[i, j].HasMoved);
                             NewBoard[i, j] = ReversPawn;
                         }
                         if (NewBoard[i, j].Type == PieceType.King)//если король, то новые рокировки
                         {
-                            King ReversKing = new King(NewBoard[i, j].Color, WatchFromWhite, NewBoard[i, j].HasMoved);
+                            King ReversKing = new King(NewBoard[i, j].Color, NewBoard[i, j].HasMoved);
                             NewBoard[i, j] = ReversKing;
                         }
                     }

@@ -21,12 +21,6 @@ namespace ChessLogic
             copy.HasMoved = HasMoved;
             return copy;
         }
-        public override Piece ReversCopy()
-        {
-            Knight copy = new Knight(Color);
-            copy.HasMoved = HasMoved;
-            return copy;
-        }
         private static IEnumerable<Position> PotentialToPositions(Position from)
         {
             foreach (Direction vDir in new Direction[] { Direction.North, Direction.South })

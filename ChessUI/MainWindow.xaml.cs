@@ -23,7 +23,7 @@ namespace ChessUI
         private readonly Dictionary<Position,Move> moveCache = new Dictionary<Position,Move>();//возможные ходы selected pos
         private static string enginePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Engines", "stockfish.exe");
         private IStockfish stockfish = new ChessEngine.Core.Stockfish(enginePath);
-        private GameState gameState ;
+        private static GameState gameState ;
         private Position selectedPos = null;
         private string path="";
 
@@ -33,7 +33,7 @@ namespace ChessUI
             InitializeComponent();
             InitializeBoard();
             BestMovesButtonsEnabled();
-            gameState = new GameState(Player.White,Board.Initial(),true);//инициализация доски, где первым начинают белые с начального положения фигур
+            gameState = new GameState(Player.White,Board.Initial());//инициализация доски, где первым начинают белые с начального положения фигур
             DrawBoard(gameState.CurrentBoard);
             FillFENTextBox();
             SetBestMoves(gameState.CurrentPlayer);//асинхронная функция 
@@ -43,7 +43,7 @@ namespace ChessUI
             InitializeComponent();
             InitializeBoard();
             BestMovesButtonsEnabled();
-            gameState = new GameState(Player.White, Board.Initial(), true);//инициализация доски, где первым начинают белые с начального положения фигур
+            gameState = new GameState(Player.White, Board.Initial());//инициализация доски, где первым начинают белые с начального положения фигур
             FENTextBox.Text = StartFEN;
             FromFENToStartPosition();
             SetBestMoves(gameState.CurrentPlayer);//асинхронная функция 
@@ -255,7 +255,7 @@ namespace ChessUI
             selectedPos = null;
             HideHighlights();
             moveCache.Clear();
-            gameState = new GameState(Player.White, Board.Initial(),true);
+            gameState = new GameState(Player.White, Board.Initial());
             DrawBoard(gameState.CurrentBoard);
             FillFENTextBox();
             ClearPGNTextBox();
@@ -312,7 +312,7 @@ namespace ChessUI
         private void ReversBoard()
         {
             gameState.GameStateReversBoard();
-            if (gameState.WatchFromWhite)
+            if (GameState.WatchFromWhite)
                 BoardGreed.Background = new ImageBrush(new BitmapImage(new Uri(BaseUriHelper.GetBaseUri(this), "Assets/boardw.png")));
             else
             {
@@ -827,16 +827,13 @@ namespace ChessUI
                 }
 
             }
-            else//ничего не выбрано
-            {
-            }
         }
         private void NewFileMake_Click(object sender, RoutedEventArgs e)
         {
             BestMovesButtonsEnabled();
             SaveFile();
-            path = "";
-            gameState = new GameState(Player.White, Board.Initial(), true);//инициализация доски, где первым начинают белые с начального положения фигур
+            path = string.Empty;
+            gameState = new GameState(Player.White, Board.Initial());//инициализация доски, где первым начинают белые с начального положения фигур
             DrawBoard(gameState.CurrentBoard);
             RefreshAnalysMoves();
             FillFENTextBox();//перевод текущей позиции в FEN

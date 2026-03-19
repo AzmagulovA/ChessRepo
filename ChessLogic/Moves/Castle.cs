@@ -15,12 +15,12 @@ namespace ChessLogic
         private readonly Position rookFromPos;
         private readonly Position rookToPos;
 
-        public Castle(MoveType type, Position kingPos, bool WatchFromWhite)
+        public Castle(MoveType type, Position kingPos)
         {
             Type = type;
             FromPos= kingPos;
 
-            if (WatchFromWhite)
+            if (GameState.WatchFromWhite)
             {
                 if (type == MoveType.CastleKS)//короткая
                 {

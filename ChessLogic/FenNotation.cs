@@ -25,20 +25,18 @@ namespace ChessLogic
             Position = position;
         }
 
-        public GameState ToGameState(bool WatchFromWhite)
+        public GameState ToGameState()
         {
-
             string sb = Position;
             Board board = new Board();
             Player current = new Player();
             int counterRow = 0;
             int countercColumn = 0;
             int spaceCounter = 0;
-            Position wKingPos = new Position(0, 0);
-            Position bKingPos = new Position(0, 0);
+            Position wKingPos = new Position();
+            Position bKingPos = new Position();
             for (int i = 0; i < sb.Length; i++)
             {
-                Piece piece = new Bishop(Player.Black);
                 if (sb[i] == ' ')
                 {
                     spaceCounter++;
@@ -48,7 +46,7 @@ namespace ChessLogic
                 {
                     if (Char.IsDigit(sb, i))//если цифра
                     {
-                        countercColumn = countercColumn + int.Parse(sb[i].ToString());
+                        countercColumn += int.Parse(sb[i].ToString());
                     }
                     else//если не цифра
                     {
@@ -59,8 +57,8 @@ namespace ChessLogic
                         }
                         else
                         {
-                        Piece piece1 = Piece.FromCharToPiece(sb[i]);
-                        switch (piece1)
+                        Piece piece = Piece.FromCharToPiece(sb[i]);
+                        switch (piece)
                         {
                             case Pawn:
                                 if (counterRow == 1 && piece.Color == Player.Black ||
@@ -140,12 +138,12 @@ namespace ChessLogic
             }
             Player CurrentPlayer = current;
             Board CurrentBoard = board;
-            if (WatchFromWhite) CurrentBoard = board;
+            if (GameState.WatchFromWhite) CurrentBoard = board;
             else
             {
                 CurrentBoard = board.ReversBoard(false);
             }
-            return new GameState(CurrentPlayer, CurrentBoard, WatchFromWhite);
+            return new GameState(CurrentPlayer, CurrentBoard);
         }
 
         public override string ToString()

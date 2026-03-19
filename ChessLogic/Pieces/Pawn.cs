@@ -11,62 +11,20 @@ namespace ChessLogic
         public override PieceType Type => PieceType.Pawn;//override - переназначенный тип базового класса
         public override Player Color { get; set; }
 
-        public bool WatchFromWhite = true;
+        private readonly Direction moveDirection;
 
-        private readonly Direction forward;
-
-        public Pawn(Player color)
+        public Pawn(Player color, bool hasMoved = false)
         {
             Color = color;
-            if (WatchFromWhite) forward = color == Player.White ? Direction.North : Direction.South;//если со стороны белых, то белые вверх
-            else forward = color == Player.White ? Direction.South : Direction.North;//если со стороны чёрных, то белые вниз
-        }
-
-        public Pawn(Player color, bool watchFromWhite = true) 
-        {
-            Color = color;
-            WatchFromWhite = watchFromWhite;
-            /*if (color == Player.White)
-            {
-                forward = Direction.North;
-
-            }
-            else
-            {
-                forward = Direction.South;
-            }*/
-           
-            if (WatchFromWhite) forward = color == Player.White ? Direction.North : Direction.South;//если со стороны белых, то белые вверх
-            else forward = color == Player.White ? Direction.South : Direction.North;//если со стороны чёрных, то белые вниз
-        }
-        public Pawn(Player color, bool watchFromWhite,bool hasMoved)
-        {
-            Color = color;
-            WatchFromWhite = watchFromWhite;
-            /*if (color == Player.White)
-            {
-                forward = Direction.North;
-
-            }
-            else
-            {
-                forward = Direction.South;
-            }*/
             HasMoved = hasMoved;
-            if (WatchFromWhite) forward = color == Player.White ? Direction.North : Direction.South;//если со стороны белых, то белые вверх
-            else forward = color == Player.White ? Direction.South : Direction.North;//если со стороны чёрных, то белые вниз
+            if (GameState.WatchFromWhite == color is Player.White)
+                moveDirection = Direction.North;
+            else
+                moveDirection = Direction.South;
         }
         public override Piece Copy()
         {
-            Pawn copy = new Pawn(Color, WatchFromWhite);
-            copy.HasMoved = HasMoved;
-            return copy;
-        }
-        public override Piece ReversCopy()
-        {
-            Pawn copy = new Pawn(Color, !WatchFromWhite);
-            copy.HasMoved = HasMoved;
-            return copy;
+            return new Pawn(Color, HasMoved);
         }
         private static bool CanMoveTo(Position pos, Board board)
         {
@@ -92,10 +50,10 @@ namespace ChessLogic
 
         private IEnumerable<Move> ForwardMoves(Position from,Board board)
         {
-            Position oneMovePos = from + forward;
+            Position oneMovePos = from + moveDirection;
             if (CanMoveTo(oneMovePos,board))
             {
-                if(oneMovePos.Row==0 || oneMovePos.Row == 7)//если это клетки преращения
+                if(oneMovePos.IsPromotionRow())//если это клетки преращения
                 {
                     foreach (Move promMove in PromotionMoves(from, oneMovePos))
                     {
@@ -106,7 +64,7 @@ namespace ChessLogic
                 {
                     yield return new NormalMove(from, oneMovePos);
                 }                
-                Position twoMovePos = oneMovePos + forward;
+                Position twoMovePos = oneMovePos + moveDirection;
                 if(!HasMoved && CanMoveTo(twoMovePos, board))//двойной ход только если до этого не двигалась и при этом можо сходить на 2 клетки
                 {
                     yield return new DoublePawn(from,twoMovePos);
@@ -118,7 +76,7 @@ namespace ChessLogic
         {
             foreach(Direction dir in new Direction[] {Direction.West,Direction.East })
             {
-                Position to = from + forward + dir;
+                Position to = from + moveDirection + dir;
 
                 if (to == board.GetPawnSkipPosition(Color.Opponent()))
                 {
@@ -127,7 +85,7 @@ namespace ChessLogic
                 }
                 else if (CanCaptureAt(to, board))//если можно бить по диагонали
                 {
-                    if (to.Row == 0 || to.Row == 7)//если это клетки преращения
+                    if (to.IsPromotionRow())//если это клетки преращения
                     {
                         foreach (Move promMove in PromotionMoves(from, to))
                         {
@@ -158,8 +116,5 @@ namespace ChessLogic
                 return piece!=null && piece.Type == PieceType.King;
             }) ;
         }
-
-
-
     }
 }

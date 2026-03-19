@@ -29,12 +29,6 @@ namespace ChessLogic
             copy.HasMoved = HasMoved;
             return copy;
         }
-        public override Piece ReversCopy()
-        {
-            Bishop copy = new Bishop(Color);
-            copy.HasMoved = HasMoved;
-            return copy;
-        }
 
         public override IEnumerable<Move> GetMoves(Position from, Board board)
         {

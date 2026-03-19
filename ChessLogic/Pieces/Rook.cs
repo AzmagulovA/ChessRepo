@@ -34,12 +34,6 @@ namespace ChessLogic
             copy.HasMoved = HasMoved;
             return copy;
         }
-        public override Piece ReversCopy()
-        {
-            Rook copy = new Rook(Color);
-            copy.HasMoved = HasMoved;
-            return copy;
-        }
         public override IEnumerable<Move> GetMoves(Position from, Board board)
         {
             return MovePositionInDirs(from, board, dirs).Select(to => new NormalMove(from, to));//получаем множество доступных позиций, для каждого из которых берется нормальный ход и помещается туда

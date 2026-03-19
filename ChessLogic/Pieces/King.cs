@@ -9,7 +9,6 @@ namespace ChessLogic
     public class King:Piece
     {
         public override PieceType Type => PieceType.King;//override - переназначенный тип базового класса
-        public bool WatchFromWhite = true;//изначально вид со стороны белых
         public override Player Color { get; set; }
         private static readonly Direction[] dirs = new Direction[]
         {
@@ -22,16 +21,9 @@ namespace ChessLogic
             Direction.SouthWest,
             Direction.SouthEast
         };
-        public King(Player color, bool watchFromWhite)
+        public King(Player color,  bool hasMoved = false)
         {
             Color = color;
-            WatchFromWhite = watchFromWhite;
-
-        }
-        public King(Player color, bool watchFromWhite, bool hasMoved)
-        {
-            Color = color;
-            WatchFromWhite = watchFromWhite;
             HasMoved = hasMoved;
 
         }
@@ -57,7 +49,7 @@ namespace ChessLogic
             }
             Position rookPos;
             Position[] beetweePositions;
-            if (WatchFromWhite) {
+            if (GameState.WatchFromWhite) {
                 rookPos = new Position(from.Row, 7);
                 beetweePositions = new Position[] { new(from.Row, 5), new(from.Row, 6) }; 
             }
@@ -77,7 +69,7 @@ namespace ChessLogic
             }
             Position rookPos;
             Position[] betweenPositions;
-            if (WatchFromWhite)
+            if (GameState.WatchFromWhite)
             {
                 rookPos = new Position(from.Row, 0);
                 betweenPositions = new Position[] { new(from.Row, 1), new(from.Row, 2), new(from.Row, 3) };
@@ -93,15 +85,7 @@ namespace ChessLogic
         }
         public override Piece Copy()
         {
-            King copy = new King(Color,WatchFromWhite);
-            copy.HasMoved = HasMoved;
-            return copy;
-        }
-        public override Piece ReversCopy()
-        {
-            King copy = new King(Color, !WatchFromWhite);
-            copy.HasMoved = HasMoved;
-            return copy;
+            return new King(Color, HasMoved);
         }
         private IEnumerable<Position> MovePositions(Position from,Board board)
         {
@@ -126,11 +110,11 @@ namespace ChessLogic
             }
             if (CanCastleKingSide(from,board))
             {
-                yield return new Castle(MoveType.CastleKS, from,WatchFromWhite);
+                yield return new Castle(MoveType.CastleKS, from);
             }
             if (CanCastleQueenSide(from,board))
             {
-                yield return new Castle(MoveType.CastleQS, from, WatchFromWhite);
+                yield return new Castle(MoveType.CastleQS, from);
             }
 
         }

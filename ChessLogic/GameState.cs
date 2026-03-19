@@ -25,7 +25,7 @@ namespace ChessLogic
 
         public AnalysMove analysMove = new AnalysMove();//текущий анализируемый ход
 
-        public bool WatchFromWhite = true;//переменная для отображения доски со стороны белых
+        public static bool WatchFromWhite = true;//переменная для отображения доски со стороны белых
 
         public void GameStateFromStr(String textFromFile)
         {
@@ -126,11 +126,10 @@ namespace ChessLogic
 
 
         }
-        public GameState(Player player,Board board,bool FromWhite)
+        public GameState(Player player,Board board)
         {
             CurrentPlayer = player;
             CurrentBoard = board;
-            CurrentBoard.BoardFromWhite = FromWhite;//при генерации доски изначальный вид со стороны белых
             
         }
         public IEnumerable<Move> LegalMovesForPiece(Position pos)//возможные ходы для выбранной фигуры
@@ -177,13 +176,13 @@ namespace ChessLogic
                     Position kingPos = CurrentBoard.FindPiece(CurrentPlayer, PieceType.King);
                     if (moveStr.Length == 3)//O-O
                     {
-                        move = new Castle(MoveType.CastleKS, kingPos, WatchFromWhite);
+                        move = new Castle(MoveType.CastleKS, kingPos);
 
                     }
                     else//O-O-O
                     {
 
-                        move = new Castle(MoveType.CastleQS, kingPos, WatchFromWhite);
+                        move = new Castle(MoveType.CastleQS, kingPos);
                     }
                     MakeMove(move);
                 }
@@ -400,12 +399,12 @@ namespace ChessLogic
                             case 2:
                                 if ((strMove=="e1g1")||(strMove == "e8g8"))
                                 {
-                                    move = new Castle(MoveType.CastleKS, from, WatchFromWhite);
+                                    move = new Castle(MoveType.CastleKS, from);
                                     
                                 }
                                 else
                                 {
-                                    move = new Castle(MoveType.CastleQS, from, WatchFromWhite); 
+                                    move = new Castle(MoveType.CastleQS, from); 
                                 }
                                 break;
                             
@@ -683,8 +682,8 @@ namespace ChessLogic
                             switch (sb[i])
                             {
                                 case 'p': 
-                                    if(counterRow == 1)piece = new Pawn(Player.Black, true,false); //пешка не ходила
-                                    else { piece = new Pawn(Player.Black, true, true); }
+                                    if(counterRow == 1)piece = new Pawn(Player.Black, false); //пешка не ходила
+                                    else { piece = new Pawn(Player.Black, true); }
                                     break;
                                 case 'b': piece = new Bishop(Player.Black); break;
                                 case 'n': piece = new Knight(Player.Black); break;
@@ -696,8 +695,8 @@ namespace ChessLogic
                                     break;
 
                                 case 'P':
-                                    if (counterRow == 6) piece = new Pawn(Player.White, true, false); //пешка не ходила
-                                    else { piece = new Pawn(Player.White, true, true); }
+                                    if (counterRow == 6) piece = new Pawn(Player.White, false); //пешка не ходила
+                                    else { piece = new Pawn(Player.White, true); }
                                     break;
                                 case 'B': piece = new Bishop(Player.White); break;
                                 case 'N': piece = new Knight(Player.White); break;
@@ -775,7 +774,8 @@ namespace ChessLogic
             }
             CurrentPlayer = current;
 
-            if (WatchFromWhite) CurrentBoard = board;
+            if (WatchFromWhite) 
+                CurrentBoard = board;
             else
             {
                 CurrentBoard = board.ReversBoard(false);
