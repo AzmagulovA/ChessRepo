@@ -15,13 +15,13 @@ namespace ChessLogic
         public static int Counter = 0;
         public int Number = 0;
         public int MoveNumb { get; set; }
-        public AnalysMove PreviousMove;// ссылка на предыдущий ход
+        public AnalysMove? PreviousMove;// ссылка на предыдущий ход
         public List<AnalysMove> NextMoves;//ссылки на следующие ходы 
 
         public string UserComment = "";
 
-        public Position LastFrom = null;//последняя позиция откуда
-        public Position LastTo = null;//позиция куда
+        public Position? LastFrom = null;//последняя позиция откуда
+        public Position? LastTo = null;//позиция куда
 
         public AnalysMove()
         {
@@ -45,7 +45,7 @@ namespace ChessLogic
         {
             return Number.ToString();
         }
-        public AnalysMove(string moveName, AnalysMove lastMove, List<AnalysMove> nextMoves, Position lastFrom, Position lastTo, int moveNumb)
+        public AnalysMove(string moveName, AnalysMove? lastMove, List<AnalysMove> nextMoves, Position? lastFrom, Position? lastTo, int moveNumb)
         {
             FenAfterMove = new FenNotation();
             Counter++;
@@ -99,7 +99,7 @@ namespace ChessLogic
                 return string.Concat(MoveName, " {" + UserComment + "} ");
         }
 
-        public AnalysMove SearchMove(int numb)
+        public AnalysMove? SearchMove(int numb)
         {
             AnalysMove root = this;
 
@@ -111,14 +111,14 @@ namespace ChessLogic
             return root.SearchInBranch(numb);
         }
 
-        public AnalysMove SearchInBranch(int numb)
+        public AnalysMove? SearchInBranch(int numb)
         {
             if (Number == numb)
                 return this;
 
             for (int i = 0; i < NextMoves.Count; i++)
             {
-                AnalysMove foundMove = NextMoves[i].SearchInBranch(numb);
+                AnalysMove? foundMove = NextMoves[i].SearchInBranch(numb);
 
                 if (foundMove != null)
                     return foundMove;

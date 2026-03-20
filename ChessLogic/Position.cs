@@ -27,10 +27,11 @@ namespace ChessLogic
         }
         public Position(string coords)
         {
-            Row = Math.Abs((int)Char.GetNumericValue(coords[1]) - 8);
-            Column = Math.Abs(coords[0] - 97);
+            // Assuming coords is like "a1", "h8"
+            Column = coords[0] - 'a';
+            Row = 8 - (int)char.GetNumericValue(coords[1]);
         }
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is Position position &&
                    Row == position.Row &&
@@ -60,9 +61,16 @@ namespace ChessLogic
         {
             return !(left == right);
         }
-        public static Position operator +(Position pos,Direction dir )
+        public static Position operator +(Position pos, Direction dir)
         {
             return new Position(pos.Row + dir.RowDelta, pos.Column + dir.ColumnDelta);
+        }
+
+        public override string ToString()
+        {
+            char col = (char)('a' + Column);
+            int row = 8 - Row;
+            return $"{col}{row}";
         }
     }
 

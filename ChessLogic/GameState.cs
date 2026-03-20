@@ -18,7 +18,7 @@ namespace ChessLogic
         public Board CurrentBoard { get; set; }//доска в текущий момент
         public Player CurrentPlayer { get; private set; }//ход игрока
 
-        public Result Result { get; private set; } = null;//результат партии
+        public Result? Result { get; private set; } = null;//результат партии
 
         private int noCaptureOrPawnMoves = 0;//подсчет ходов без взятия или хода пешки (иначе ничья)
 
@@ -27,104 +27,109 @@ namespace ChessLogic
 
         public static bool WatchFromWhite = true;//переменная для отображения доски со стороны белых
 
-        public void GameStateFromStr(String textFromFile)
+        public void GameStateFromStr(string textFromFile)
+        {
+            (string fen, string[] moves) = ParsePgn(textFromFile);
+
+            ResetGame(fen);
+
+            if (moves.Length > 0)
+            {
+                ApplyMovesFromPgn(moves);
+            }
+        }
+
+        private (string fen, string[] moves) ParsePgn(string textFromFile)
         {
             string fen = FenNotation.StartPosition;
             string[] moves = Array.Empty<string>();
-            string[] lines = textFromFile.Split(['\n']);//строки текста
+            string[] lines = textFromFile.Split(['\n'], StringSplitOptions.RemoveEmptyEntries);
+
             foreach (string line in lines)
             {
-                if (line.Length!=0)
+                string trimmedLine = line.Trim();
+                if (trimmedLine.StartsWith("[FEN"))
                 {
-                    string[] words = line.Split([' ']);//слова строки
-                    if (words[0] == "[FEN")//если первое слово - fen
-                    {
-                        fen = line.Split(['\"'])[1];
-                        analysMove.FenAfterMove.Position = fen;//начальное положение
-                    }
-                    if (line[0] == '1')//проверка на начало анализа
-                    {
-                        moves = words;
-                    }
-
+                    fen = trimmedLine.Split('\"')[1];
                 }
-                
+                else if (trimmedLine.Length > 0 && char.IsDigit(trimmedLine[0]))
+                {
+                    moves = trimmedLine.Split([' '], StringSplitOptions.RemoveEmptyEntries);
+                }
             }
+            return (fen, moves);
+        }
+
+        private void ResetGame(string fen)
+        {
             CurrentPlayer = Player.White;
             CurrentBoard = Board.Initial();
             WatchFromWhite = true;
-            analysMove = new AnalysMove();
-            analysMove.FenAfterMove.Position = fen;
+            analysMove = new AnalysMove { FenAfterMove = { Position = fen } };
+            FromFenToGameBoard();
+        }
+
+        private void ApplyMovesFromPgn(string[] moves)
+        {
             List<int> chronologyOfNumberMoves = new List<int>();
             List<Player> chronologyOfPlayers = new List<Player>();
-            FromFenToGameBoard();//инициализация начальной позиции
-            string correctMove;
-            string userComment="";
+            string userComment = "";
             bool commentStart = false;
-            if (moves.Length != 0)//проход по ходам
-            {
-                foreach (string move in moves)
-                {
-                    correctMove = move;
-                    if (correctMove != "")//если строка не пуста
-                    {
-                        if(!commentStart) commentStart = correctMove.Contains('{');//проверка на начало комментария
-                        if (!commentStart)//если не комментарий, то анализируем как положено 
-                        {
-                            if (correctMove[0] == '(')//начало альтернативного варианта
-                            {
-                                chronologyOfNumberMoves.Add(analysMove.Number);//запоминаем номер последнего хода основного варианта(к нему надо будет затем вернуться)
-                                chronologyOfPlayers.Add(CurrentPlayer);
-                                analysMove = analysMove.PreviousMove;//смотрим ход от которого идет разветвление
-                                CurrentPlayer = CurrentPlayer.Opponent();
-                                FromFenToGameBoard();
-                            }
-                            if (correctMove[0] == ')')//конец альтернативного варианта
-                            {
-                                analysMove = analysMove.SearchMove(chronologyOfNumberMoves.Last());//поиск последнего элемента списка
-                                CurrentPlayer = chronologyOfPlayers.Last();
-                                chronologyOfNumberMoves.RemoveAt(chronologyOfNumberMoves.Count - 1); //удаление последнего элемента
-                                chronologyOfPlayers.RemoveAt(chronologyOfPlayers.Count - 1);
-                                FromFenToGameBoard();
-                            }
-                            while (!char.IsLetter(correctMove[0]))//проверка первого элемента на букву
-                            {
 
-                                correctMove = correctMove.Substring(1);//обрезка цифр
-                                if (correctMove.Length == 0)//если это была просто цифра, то переходим к следующему
-                                {
-                                    break;
-                                }
-                            }
-                            if (correctMove.Length != 0)//если строка была не пуста
-                            {
-                                if (correctMove[correctMove.Length - 1] == '+' || correctMove[correctMove.Length - 1] == '#')//последний элемент шах
-                                {
-                                    correctMove = correctMove.Remove(correctMove.Length - 1);//обрезка 
-                                }
-                                MakeMove(correctMove);
-                            }
-                        }
-                        else//комментарий
-                        {
-                            if(correctMove.Contains('}'))//конец комментария
-                            {
-                                userComment = userComment + " " + correctMove.Replace("{", "").Replace("}", "");
-                                analysMove.UserComment = userComment;
-                                commentStart = false;
-                                userComment = "";
-                            }
-                            else
-                            {
-                                userComment = userComment + " " + correctMove.Replace("{", "").Replace("}", "");
-                            }
-                        }
+            foreach (string move in moves)
+            {
+                if (string.IsNullOrWhiteSpace(move)) continue;
+
+                if (!commentStart && move.Contains('{')) commentStart = true;
+
+                if (!commentStart)
+                {
+                    if (move.StartsWith('('))
+                    {
+                        chronologyOfNumberMoves.Add(analysMove.Number);
+                        chronologyOfPlayers.Add(CurrentPlayer);
+                        analysMove = analysMove.PreviousMove ?? analysMove;
+                        CurrentPlayer = CurrentPlayer.Opponent();
+                        FromFenToGameBoard();
+                    }
+
+                    ProcessNormalMove(move);
+
+                    if (move.EndsWith(')'))
+                    {
+                        analysMove = analysMove.SearchMove(chronologyOfNumberMoves.Last()) ?? analysMove;
+                        CurrentPlayer = chronologyOfPlayers.Last();
+                        chronologyOfNumberMoves.RemoveAt(chronologyOfNumberMoves.Count - 1);
+                        chronologyOfPlayers.RemoveAt(chronologyOfPlayers.Count - 1);
+                        FromFenToGameBoard();
+                    }
+                }
+                else
+                {
+                    userComment = (userComment + " " + move.Replace("{", "").Replace("}", "")).Trim();
+                    if (move.Contains('}'))
+                    {
+                        analysMove.UserComment = userComment;
+                        commentStart = false;
+                        userComment = "";
                     }
                 }
             }
+        }
 
+        private void ProcessNormalMove(string move)
+        {
+            string cleanMove = move.Trim('(', ')');
+            while (cleanMove.Length > 0 && !char.IsLetter(cleanMove[0]))
+            {
+                cleanMove = cleanMove.Substring(1);
+            }
 
-
+            if (cleanMove.Length > 0)
+            {
+                cleanMove = cleanMove.TrimEnd('+', '#');
+                MakeMove(cleanMove);
+            }
         }
         public GameState(Player player,Board board)
         {
@@ -143,220 +148,140 @@ namespace ChessLogic
             return moveCandidates.Where(move => move.IsLegal(CurrentBoard));
 
         }
-        public void MakeMove(string moveStr)//прием хода, все ходы выполняются с начальной позиции от лица белых
+        public void MakeMove(string moveStr)
         {
             CurrentBoard.SetPawnPosition(CurrentPlayer, null);
-            PieceType piecetype = PieceType.Pawn;
-            switch (moveStr[0])//поиск фигуры
+
+            if (moveStr.StartsWith('O'))
             {
-                case 'N'://ход конем
-                    piecetype = PieceType.Knight;
-                    break;
-                case 'B'://ход слоном
-                    piecetype =  PieceType.Bishop;
-                    break;
-                case 'Q'://ход ферзем
-                    piecetype =  PieceType.Queen;
-                    break;
-                case 'K'://ход королем
-                    piecetype =  PieceType.King;
-                    break;
-                case 'R'://ход ладьей
-                    piecetype =  PieceType.Rook;
-                    break;
-                default:
-                    break;
+                MakeCastleMove(moveStr);
+                return;
             }
-            IEnumerable<Position> pieces = CurrentBoard.FindAllPieces(CurrentPlayer, piecetype);//поиск всех положений такого цвета и типа фигуры
-            if (piecetype is PieceType.Pawn)//если пешка или рокировка
+
+            PieceType pieceType = GetPieceTypeFromChar(moveStr[0]);
+            string remainingStr = (pieceType == PieceType.Pawn) ? moveStr : moveStr.Substring(1);
+
+            PieceType promotionType = PieceType.Pawn;
+            if (char.IsLetter(remainingStr[^1]) && remainingStr.Length >= 2 && remainingStr[^2] == '=')
             {
-                if (moveStr[0]=='O')//значит рокировка
+                promotionType = GetPieceTypeFromChar(remainingStr[^1]);
+                remainingStr = remainingStr.Substring(0, remainingStr.Length - 2);
+            }
+            else if (char.IsLetter(remainingStr[^1]) && pieceType == PieceType.Pawn && remainingStr.Length >= 2)
+            {
+                // Support older notation where promotion piece is just appended
+                promotionType = GetPieceTypeFromChar(remainingStr[^1]);
+                remainingStr = remainingStr.Substring(0, remainingStr.Length - 1);
+            }
+
+            Position toPos = new Position(remainingStr.Substring(remainingStr.Length - 2));
+            string explanation = remainingStr.Length > 2 ? remainingStr.Substring(0, remainingStr.Length - 2).Replace("x", "") : "";
+
+            var candidateMoves = GetCandidateMoves(pieceType, toPos, explanation);
+
+            if (!candidateMoves.Any()) return;
+
+            Move selectedMove = candidateMoves.First();
+            if (promotionType != PieceType.Pawn)
+            {
+                selectedMove = new PawnPromotion(selectedMove.FromPos, selectedMove.ToPos, promotionType);
+            }
+
+            MakeMove(selectedMove);
+        }
+
+        private void MakeCastleMove(string moveStr)
+        {
+            Position kingPos = CurrentBoard.FindPiece(CurrentPlayer, PieceType.King);
+            MoveType castleType = moveStr.Length == 3 ? MoveType.CastleKS : MoveType.CastleQS;
+            MakeMove(new Castle(castleType, kingPos));
+        }
+
+        private PieceType GetPieceTypeFromChar(char c)
+        {
+            return c switch
+            {
+                'N' => PieceType.Knight,
+                'B' => PieceType.Bishop,
+                'R' => PieceType.Rook,
+                'Q' => PieceType.Queen,
+                'K' => PieceType.King,
+                _ => PieceType.Pawn
+            };
+        }
+
+        private IEnumerable<Move> GetCandidateMoves(PieceType type, Position toPos, string explanation)
+        {
+            var pieces = CurrentBoard.FindAllPieces(CurrentPlayer, type);
+            var candidateMoves = new List<Move>();
+
+            foreach (var pos in pieces)
+            {
+                foreach (var move in LegalMovesForPiece(pos))
                 {
-                    Move move;
-                    Position kingPos = CurrentBoard.FindPiece(CurrentPlayer, PieceType.King);
-                    if (moveStr.Length == 3)//O-O
+                    if (move.ToPos == toPos && IsMatchingExplanation(move.FromPos, explanation))
                     {
-                        move = new Castle(MoveType.CastleKS, kingPos);
-
+                        candidateMoves.Add(move);
                     }
-                    else//O-O-O
-                    {
-
-                        move = new Castle(MoveType.CastleQS, kingPos);
-                    }
-                    MakeMove(move);
                 }
-                else//ход пешкой
-                {
-                    if (char.IsLetter(moveStr[moveStr.Length-1]))//если последний символ буква, то это превращение
-                    {
-                        switch (moveStr[moveStr.Length - 1])//проверка фигуры
-                        {
-                            case 'N'://ход конем
-                                piecetype = PieceType.Knight;
-                                break;
-                            case 'B'://ход слоном
-                                piecetype = PieceType.Bishop;
-                                break;
-                            case 'Q'://ход ферзем
-                                piecetype = PieceType.Queen;
-                                break;
-                            case 'R'://ход ладьей
-                                piecetype = PieceType.Rook;
-                                break;
-                            default:
-                                break;
-                        }
-                        moveStr = moveStr.Substring(0,moveStr.Length - 2);//отсекли 2 последних символа
-                    }
-                    Position toPos = new Position(moveStr.Substring( moveStr.Length-2 ));//куда
-                    List<Move> pretendentMoves = new List<Move>();
-                    foreach (Position pos in pieces)
-                    {
-                        IEnumerable<Move> LegalMoves = LegalMovesForPiece(pos);//список ходов для фигуры определенного типа
-                        foreach (Move move in LegalMoves)
-                        {
-                            if (move.ToPos == toPos)//если фигура может сделать ход в эту клетку
-                            {
-                                pretendentMoves.Add(move);//добавляем его в список потенциальных ходов
-                            }
-                        }
-                    }
-                    switch (pretendentMoves.Count)//смотрим на количесвтов верных ходов
-                    {
-                        case 0://таких фигур нет - ошибка в описании 
-                            MakeMove(pretendentMoves[0]);
-                            break;
-                        case 4://4 превращения 
-                            Move move;
-                            if (piecetype != PieceType.Pawn)//превращение
-                            {
-                                move = new PawnPromotion(pretendentMoves[0].FromPos, pretendentMoves[0].ToPos, piecetype);
-                            }
-                            else
-                            {
-                                move = pretendentMoves[0];
-                            }
-                            MakeMove(move);//этот ход делается
-                            break;
-                        default:
-                            moveStr = moveStr.Replace("x", "");
-                            int col = Math.Abs((int)moveStr[0] - 97);
-                            IEnumerable<Move> FindMove = pretendentMoves.Where(move => move.FromPos.Column == col);
-                            if (piecetype != PieceType.Pawn)//превращение
-                            {
-                                move = new PawnPromotion(FindMove.First().FromPos, FindMove.First().ToPos, piecetype);
-                            }
-                            else
-                            {
-                                move = FindMove.First();
-                            }
-                            MakeMove(move);//этот ход делается
-                            break;
+            }
+            return candidateMoves;
+        }
 
-                    }
+        private bool IsMatchingExplanation(Position from, string explanation)
+        {
+            if (string.IsNullOrEmpty(explanation)) return true;
 
-
-                }
+            if (explanation.Length == 2)
+            {
+                return from == new Position(explanation);
+            }
+            if (char.IsDigit(explanation[0]))
+            {
+                int row = 8 - (int)char.GetNumericValue(explanation[0]);
+                return from.Row == row;
             }
             else
             {
-                Position toPos = new Position(moveStr.Substring(moveStr.Length - 2));//получение позиции от 2 последних букв хода
-                List<Move> pretendentMoves = new List<Move>();
-               
-                foreach (Position pos in pieces)
-                {
-                    IEnumerable<Move> LegalMoves = LegalMovesForPiece(pos);//список ходов для фигуры определенного типа
-                    if (moveStr == "Nf6")
-                    {
-                        AnalysMove anal = analysMove;
-                    }
-                    foreach (Move move in LegalMoves)
-                    {
-                        if (move.ToPos == toPos)//если фигура может сделать ход в эту клетку
-                        {
-                            pretendentMoves.Add(move);//добавляем его в список потенциальных ходов
-                        }
-                    }
-
-                }
-                
-                switch (pretendentMoves.Count)//смотрим на количесвтов фигур способных на этот ход
-                {
-                    case 0://таких фигур нет - ошибка в описании 
-                        MakeMove(pretendentMoves[0]);
-                        break;
-                    case 1://только одна фигура может сделать этот ход
-                        MakeMove(pretendentMoves[0]);//этот ход делается
-                        break;
-                    default://если ход может выполнить несколько фигур
-                        string explanation = "";
-                        explanation = moveStr.Substring(1,moveStr.Length-3);//?
-                        explanation = explanation.Replace("x", ""); //удаление из строки символа "рубки фигуры"
-                        IEnumerable<Move> FindMove;
-                        if (explanation.Length==2)
-                        {
-
-                            Position from = CurrentBoard.FindPiece(CurrentPlayer, piecetype, explanation);
-                            FindMove = pretendentMoves.Where(move => move.FromPos == from);
-                        }
-                        else
-                        {
-                            if (char.IsDigit(explanation[0]))//если цифра
-                            {
-                                int rows = Math.Abs(8 - (int)Char.GetNumericValue(explanation[0]));
-                                FindMove = pretendentMoves.Where(move => move.FromPos.Row == rows);
-
-                            }
-                            else//если буква
-                            {
-                                int col = Math.Abs((int)explanation[0] - 97);
-                                FindMove = pretendentMoves.Where(move => move.FromPos.Column == col);
-                            }
-                        }
-
-                        MakeMove(FindMove.First());
-                        break;
-                
-                }
+                int col = explanation[0] - 'a';
+                return from.Column == col;
             }
-
-
         }
-        public void MakeMove(Move move)//совершение хода
+        public void MakeMove(Move move)
         {
             CurrentBoard.SetPawnPosition(CurrentPlayer, null);
-            AnalysMove newAnalysMove;
-            Position from,to;
 
-            from = WatchFromWhite ? move.FromPos : new Position(Math.Abs(move.FromPos.Row - 7), Math.Abs(move.FromPos.Column - 7));
-            to = WatchFromWhite ? move.ToPos : new Position(Math.Abs(move.ToPos.Row - 7), Math.Abs(move.ToPos.Column - 7));
+            Position from = WatchFromWhite ? move.FromPos : new Position(7 - move.FromPos.Row, 7 - move.FromPos.Column);
+            Position to = WatchFromWhite ? move.ToPos : new Position(7 - move.ToPos.Row, 7 - move.ToPos.Column);
 
-            int newMoveNumb = analysMove.MoveNumb;
-            newMoveNumb = CurrentPlayer == Player.Black ? newMoveNumb+1 : newMoveNumb;
+            int newMoveNumb = CurrentPlayer == Player.Black ? analysMove.MoveNumb + 1 : analysMove.MoveNumb;
 
-            newAnalysMove = new AnalysMove(SetNameAndExecuteMove(move), analysMove, new List<AnalysMove>(), from, to, newMoveNumb);
+            string moveName = SetNameAndExecuteMove(move);
+            AnalysMove newAnalysMove = new AnalysMove(moveName, analysMove, new List<AnalysMove>(), from, to, newMoveNumb);
 
-            if (analysMove.NextMoves.Any(s => s.MoveName == newAnalysMove.MoveName)) //если в ветке есть такой ход с таким именем
+            AnalysMove? existingMove = analysMove.NextMoves.FirstOrDefault(s => s.MoveName == moveName);
+
+            if (existingMove != null)
             {
-                analysMove = analysMove.NextMoves[analysMove.NextMoves.FindIndex(s => s.MoveName == newAnalysMove.MoveName)];//то находим эту ветку и перехдим к ней
-
-                CurrentPlayer = CurrentPlayer.Opponent();
+                analysMove = existingMove;
             }
-            else //если ход не делался раньше в ветке
+            else
             {
-                analysMove.NextMoves.Add(newAnalysMove);//добавляем его в 
-
-                CurrentPlayer = CurrentPlayer.Opponent();
-
+                analysMove.NextMoves.Add(newAnalysMove);
                 analysMove = newAnalysMove;
-            } 
-            UpdateStateString();//обновление FEN для текущего analysMove
+            }
+
+            CurrentPlayer = CurrentPlayer.Opponent();
+            UpdateStateString();
             CheckForGameOver();
         }
         public void SetMoveByNumber(int numb)
         {
-            analysMove = analysMove.SearchMove(numb);
+            AnalysMove? foundMove = analysMove.SearchMove(numb);
+            if (foundMove != null)
+            {
+                analysMove = foundMove;
+            }
             CheckForGameOver();
         }
         public string MakeFullStrHistory()
@@ -466,10 +391,15 @@ namespace ChessLogic
         public Position FromStrToPos(string coords)
         {
             Position res;
-            if (WatchFromWhite) res = new Position(Math.Abs((int)Char.GetNumericValue(coords[1]) - 8),Math.Abs(coords[0] - 97) );//со стороны белых
+            if (WatchFromWhite)
+            {
+                res = new Position(coords);
+            }
             else
             {
-                res = new Position(Math.Abs((int)Char.GetNumericValue(coords[1]) - 1), Math.Abs(coords[0] - 104));
+                int row = (int)char.GetNumericValue(coords[1]) - 1;
+                int col = 'h' - coords[0];
+                res = new Position(row, col);
             }
             return res;
         }
@@ -627,34 +557,25 @@ namespace ChessLogic
             Name = takePiece? Name = Name + 'x' + FromCoordsToStr(move.ToPos, WatchFromWhite) : Name + FromCoordsToStr(move.ToPos, WatchFromWhite);
             return Name;
         }
-        public string FromCoordsToStr(Position pos,bool WatchFromWhite)
+        public string FromCoordsToStr(Position pos, bool WatchFromWhite)
         {
-            string res = "";
-            char letter;
-            string digit;
-
-            if (WatchFromWhite) { 
-            letter = (char)(97+pos.Column);
-
-            digit = Math.Abs(8 - pos.Row).ToString();
+            if (WatchFromWhite)
+            {
+                return pos.ToString();
             }
             else
             {
-                letter = (char)(104 - pos.Column);
-
-                digit = Math.Abs(1 + pos.Row).ToString();
+                char letter = (char)('h' - pos.Column);
+                int digit = pos.Row + 1;
+                return $"{letter}{digit}";
             }
-
-            res = letter + digit;
-
-            return res;
         }
         public void FromFenToGameBoard()
         {
             
             string sb = analysMove.FenAfterMove.Position;
             Board board = new Board();
-            Player current = new Player();
+            Player current = Player.White;
             int counterRow = 0;
             int countercColumn = 0;
             int spaceCounter = 0;
@@ -662,7 +583,7 @@ namespace ChessLogic
             Position bKingPos = new Position(0, 0);
             for (int i = 0; i < sb.Length; i++)
             {
-                Piece piece = new Bishop(Player.Black);
+                Piece? piece = null;
                 if (sb[i] == ' ') 
                 { 
                     spaceCounter++;
@@ -708,7 +629,10 @@ namespace ChessLogic
                                     break;
                                 default: break;
                             }
-                            board[counterRow, countercColumn] = piece;
+                            if (piece != null)
+                            {
+                                board[counterRow, countercColumn] = piece;
+                            }
                             countercColumn++;
                         }
 
@@ -766,7 +690,7 @@ namespace ChessLogic
                     }
                     else//если там что-то есть
                     {
-                        board.pawnSkipPositions[current.Opponent()] = new Position(Math.Abs(8 - (int)Char.GetNumericValue(sb[i+1])), Math.Abs((int)sb[i]-97));//g6 = 2 6| a6 - 2 0 | a-97 b-98 h-104 g-103| b3 = 4 1
+                        board.pawnSkipPositions[current.Opponent()] = new Position(sb.Substring(i, 2));
                         break;
                     }
                     

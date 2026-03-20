@@ -78,7 +78,7 @@ namespace ChessLogic
             {
                 Position to = from + moveDirection + dir;
 
-                if (to == board.GetPawnSkipPosition(Color.Opponent()))
+                if (board.GetPawnSkipPosition(Color.Opponent()) is Position skipPos && to == skipPos)
                 {
                     yield return new EnPassant(from, to);
 

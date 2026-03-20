@@ -46,9 +46,9 @@ namespace ChessLogic
             });
         }
 
-        public static Piece FromCharToPiece(char ch)
+        public static Piece? FromCharToPiece(char ch)
         {
-            Piece piece;
+            Piece? piece;
             Player pieceColor = char.IsLower(ch) ? Player.Black : Player.White;
             switch (char.ToLower(ch))
             {

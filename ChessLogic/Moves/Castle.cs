@@ -11,9 +11,9 @@ namespace ChessLogic
         public override MoveType Type { get; }
         public override Position FromPos { get; }
         public override Position ToPos { get; }
-        private readonly Direction kingMoveDir;
-        private readonly Position rookFromPos;
-        private readonly Position rookToPos;
+        private readonly Direction kingMoveDir = null!;
+        private readonly Position rookFromPos = null!;
+        private readonly Position rookToPos = null!;
 
         public Castle(MoveType type, Position kingPos)
         {

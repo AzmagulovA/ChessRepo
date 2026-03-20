@@ -15,7 +15,7 @@ namespace ChessLogic
         private readonly Piece[,] pieces = new Piece[8, 8];
 
 
-        public Dictionary<Player, Position> pawnSkipPositions = new Dictionary<Player, Position>()
+        public Dictionary<Player, Position?> pawnSkipPositions = new Dictionary<Player, Position?>()
         {
             { Player.White, null},
             { Player.Black,null}
@@ -32,12 +32,12 @@ namespace ChessLogic
             set { this[pos.Row, pos.Column] = value; }
         }
 
-        public Position GetPawnSkipPosition(Player player)
+        public Position? GetPawnSkipPosition(Player player)
         {
             return pawnSkipPositions[player];
 
         }
-        public void SetPawnPosition(Player player, Position pos)
+        public void SetPawnPosition(Player player, Position? pos)
         {
             pawnSkipPositions[player] = pos;
         }
@@ -51,46 +51,34 @@ namespace ChessLogic
         }
         private void AddStartPieces()
         {
-            this[0, 0] = new Rook(Player.Black);
-            this[0, 1] = new Knight(Player.Black);
-            this[0, 2] = new Bishop(Player.Black);
-            this[0, 3] = new Queen(Player.Black);
-            this[0, 4] = new King(Player.Black);
-            this[0, 5] = new Bishop(Player.Black);
-            this[0, 6] = new Knight(Player.Black);
-            this[0, 7] = new Rook(Player.Black);
-
-            this[1, 0] = new Pawn(Player.Black);
-            this[1, 1] = new Pawn(Player.Black);
-            this[1, 2] = new Pawn(Player.Black);
-            this[1, 3] = new Pawn(Player.Black);
-            this[1, 4] = new Pawn(Player.Black);
-            this[1, 5] = new Pawn(Player.Black);
-            this[1, 6] = new Pawn(Player.Black);
-            this[1, 7] = new Pawn(Player.Black);
-
-
-            this[7, 0] = new Rook(Player.White);
-            this[7, 1] = new Knight(Player.White);
-            this[7, 2] = new Bishop(Player.White);
-            this[7, 3] = new Queen(Player.White);
-            this[7, 4] = new King(Player.White);
-            this[7, 5] = new Bishop(Player.White);
-            this[7, 6] = new Knight(Player.White);
-            this[7, 7] = new Rook(Player.White);
-
-            this[6, 0] = new Pawn(Player.White);
-            this[6, 1] = new Pawn(Player.White);
-            this[6, 2] = new Pawn(Player.White);
-            this[6, 3] = new Pawn(Player.White);
-            this[6, 4] = new Pawn(Player.White);
-            this[6, 5] = new Pawn(Player.White);
-            this[6, 6] = new Pawn(Player.White);
-            this[6, 7] = new Pawn(Player.White);
+            AddBackRank(0, Player.Black);
+            AddPawnRow(1, Player.Black);
+            AddPawnRow(6, Player.White);
+            AddBackRank(7, Player.White);
         }
-        public static bool IsInside(Position pos)
+
+        private void AddBackRank(int row, Player color)
         {
-            return pos.Row >= 0 && pos.Row <= 7 && pos.Column >= 0 && pos.Column <= 7;
+            this[row, 0] = new Rook(color);
+            this[row, 1] = new Knight(color);
+            this[row, 2] = new Bishop(color);
+            this[row, 3] = new Queen(color);
+            this[row, 4] = new King(color);
+            this[row, 5] = new Bishop(color);
+            this[row, 6] = new Knight(color);
+            this[row, 7] = new Rook(color);
+        }
+
+        private void AddPawnRow(int row, Player color)
+        {
+            for (int col = 0; col < 8; col++)
+            {
+                this[row, col] = new Pawn(color);
+            }
+        }
+        public static bool IsInside(Position? pos)
+        {
+            return pos != null && pos.Row >= 0 && pos.Row <= 7 && pos.Column >= 0 && pos.Column <= 7;
         }
         public bool IsEmpty(Position pos)//проверка на пустоту клетки
         {
@@ -183,24 +171,23 @@ namespace ChessLogic
         {
             return PiecePositionsFor(color).First(pos => this[pos].Type == type);
         }
-        public Position FindPiece(Player color, PieceType type, String Coords)//поиск фигуры с подсказкой
+        public Position FindPiece(Player color, PieceType type, string coords)//поиск фигуры с подсказкой
         {
-            if (Coords.Length == 2)//если просто 2 символа, то надо просто конвертировать в позицию 
+            if (coords.Length == 2)//если просто 2 символа, то надо просто конвертировать в позицию
             {
-                return new Position(Math.Abs(8 - (int)Char.GetNumericValue(Coords[1])), Math.Abs((int)Coords[0] - 97));
+                return new Position(coords);
             }
             else
             {
-                if (char.IsDigit(Coords[0]))//если цифра
+                if (char.IsDigit(coords[0]))//если цифра
                 {
-                    int rows = Math.Abs(8 - (int)Char.GetNumericValue(Coords[0]));
-                    return PiecePositionsFor(color).Where(pos => pos.Row == rows).First(pos => this[pos].Type == type);
+                    int row = 8 - (int)char.GetNumericValue(coords[0]);
+                    return PiecePositionsFor(color).First(pos => pos.Row == row && this[pos].Type == type);
                 }
                 else//если буква
                 {
-                    int col = Math.Abs((int)Coords[0] - 97);
-
-                    return PiecePositionsFor(color).Where(pos => pos.Column == col).First(pos => this[pos].Type == type);
+                    int col = coords[0] - 'a';
+                    return PiecePositionsFor(color).First(pos => pos.Column == col && this[pos].Type == type);
                 }
             }
 
@@ -364,41 +351,35 @@ namespace ChessLogic
         {
             return (IsInCheck(CurrentPlayer.Opponent()));
         }
-        public Board ReversBoard(bool WatchFromWhite)
+        public Board ReversBoard(bool watchFromWhite)
         {
-            Board NewBoard = new Board();
+            Board newBoard = new Board { BoardFromWhite = watchFromWhite };
 
-            NewBoard.BoardFromWhite = WatchFromWhite;//значение доски перевернуто
-
-            NewBoard.pawnSkipPositions = pawnSkipPositions;
-
-            if (pawnSkipPositions[Player.White] != null) NewBoard.pawnSkipPositions[Player.White] = new Position(Math.Abs(pawnSkipPositions[Player.White].Row - 7),Math.Abs(pawnSkipPositions[Player.White].Column - 7));
-            if (pawnSkipPositions[Player.Black] != null) NewBoard.pawnSkipPositions[Player.Black] = new Position(Math.Abs(pawnSkipPositions[Player.Black].Row - 7), Math.Abs(pawnSkipPositions[Player.Black].Column - 7));
-
-            for (int i = 0; i < 8; i++)
+            foreach (var kvp in pawnSkipPositions)
             {
-                for (int j = 0; j < 8; j++)
+                if (kvp.Value != null)
                 {
-                    NewBoard[i, j] = this[Math.Abs(i - 7), Math.Abs(j - 7)];//переврот элементов
-
-                    if (NewBoard[i, j] != null)
-                    {
-                        if (NewBoard[i, j].Type == PieceType.Pawn)//если пешка, то идет в противоположном направлении
-                        {
-                            Pawn ReversPawn = new Pawn(NewBoard[i, j].Color,  NewBoard[i, j].HasMoved);
-                            NewBoard[i, j] = ReversPawn;
-                        }
-                        if (NewBoard[i, j].Type == PieceType.King)//если король, то новые рокировки
-                        {
-                            King ReversKing = new King(NewBoard[i, j].Color, NewBoard[i, j].HasMoved);
-                            NewBoard[i, j] = ReversKing;
-                        }
-                    }
-
-
+                    newBoard.pawnSkipPositions[kvp.Key] = new Position(7 - kvp.Value.Row, 7 - kvp.Value.Column);
                 }
             }
-            return NewBoard;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int c = 0; c < 8; c++)
+                {
+                    Piece? piece = this[7 - r, 7 - c];
+                    if (piece != null)
+                    {
+                        newBoard[r, c] = piece.Type switch
+                        {
+                            PieceType.Pawn => new Pawn(piece.Color, piece.HasMoved),
+                            PieceType.King => new King(piece.Color, piece.HasMoved),
+                            _ => piece.Copy()
+                        };
+                    }
+                }
+            }
+            return newBoard;
         }
 
     }
