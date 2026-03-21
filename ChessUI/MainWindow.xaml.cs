@@ -25,6 +25,8 @@ namespace ChessUI
         private IStockfish stockfish = new ChessEngine.Core.Stockfish(enginePath);
         private static GameState gameState ;
         private Position selectedPos = null;
+        private bool isBoardReversed = false;
+
         private string path="";
 
 
@@ -70,22 +72,23 @@ namespace ChessUI
         }
         private void DrawBoard(Board board)
         {
-            for (int row = 0; row < 8; row++)
+            for (int r = 0; r < 8; r++)
             {
-                for (int col = 0; col < 8; col++)
+                for (int c = 0; c < 8; c++)
                 {
-                    Piece piece = board[row, col];
-                    pieceImages[row, col].Source = Images.GetImage(piece);
-                    highLights[row, col].Fill = Brushes.Transparent;
+                    // Если доска перевернута, берем фигуры с противоположных индексов
+                    int logicRow = isBoardReversed ? 7 - r : r;
+                    int logicCol = isBoardReversed ? 7 - c : c;
 
+                    Piece piece = board[logicRow, logicCol];
+                    pieceImages[r, c].Source = Images.GetImage(piece);
+                    highLights[r, c].Fill = Brushes.Transparent;
                 }
             }
-
-
         }
-        private void OnFromPositionSelected(Position pos)//из выбранной позиции
+        private void OnFromPositionSelected(Position pos)
         {
-            IEnumerable<Move> moves = gameState.LegalMovesForPiece(pos);//показываем текущие возможные ходы
+            IEnumerable<Move> moves = gameState.LegalMovesForPiece(pos);
             if (moves.Any())
             {
                 selectedPos = pos;
@@ -94,11 +97,11 @@ namespace ChessUI
             }
         }
 
-        private void OnToPositionSelected(Position pos)//на выбранную позицию
+        private void OnToPositionSelected(Position pos)
         {
             HideHighlights();
 
-            if (moveCache.TryGetValue(pos, out Move move))//попытка перейти по выбранной клетке
+            if (moveCache.TryGetValue(pos, out Move move))
             {
                 selectedPos = null;
                 
@@ -113,13 +116,13 @@ namespace ChessUI
             }
             else
             {
-                if (selectedPos == pos)//если игрок нажал на фигуру во второй раз, то он хочет скрыть его ходы
+                if (selectedPos == pos)
                 {
                     selectedPos = null;
                 }
                 else
                 {
-                    OnFromPositionSelected(pos);//если игрок не нажал на указанные позиции, то значит он хочет сходить за другую фигуру
+                    OnFromPositionSelected(pos);
                 }
             }
         }
@@ -140,39 +143,61 @@ namespace ChessUI
         }
         private void HandleMove(Move move)
         {
-            gameState.MakeMove(move);//совершение хода
-            FillPGN();//запись хода
-            RefreshAnalysMoves();
-            FillAllInformationAboutMove();//после любого хода следует заполнение информации об этом ходе
-            
+            gameState.MakeMove(move); 
+            UpdateUI();
+        }
+
+        private void UpdateUI()
+        {
+            DrawBoard(gameState.CurrentBoard);
+            FillPGN();
+            FillFENTextBox();
+            RefreshAnalysMoves(); 
+            ShowLastMoves();
+            ShowCheck();
+
+            if (gameState.Result != null) NotifyEndOfGame();
         }
         private void FillAllInformationAboutMove()
         {
             BestMovesButtonsEnabled();
-            FillFENTextBox();//перевод текущей позиции в FEN
-            FromFENToPosition();
-            ShowLastMoves();//отрисовка последних ходов
-            ShowCheck();//отрисовка шаха
-            PaintButton(gameState.analysMove);
-            if (gameState.IsGameOver())//закончилась игра
+            FillFENTextBox();
+            DrawBoard(gameState.CurrentBoard); // Перерисовываем доску
+            ShowLastMoves();                   // Подсвечиваем клетки
+            ShowCheck();                       // Проверяем шах
+            PaintButton(gameState.CurrentAnalysisNode);
+
+            if (gameState.IsGameOver())
             {
                 NotifyEndOfGame();
             }
-            CommentTextBox.Text = string.Empty;
+
             FilledCommentTextBox();
         }
-        private void FillPGN()//заполнение блока ходов
+
+        private void FillFENTextBox()
         {
-            PGNTextBox.Text = gameState.MakeFullStrHistory();
+            FENTextBox.Text = gameState.CurrentAnalysisNode.FenAfterMove.Position;
+        }
+
+        private void NotifyEndOfGame()
+        {
+            gameState.CurrentAnalysisNode.UserComment = gameState.Result.ToString();
+        }
+        private void FillPGN()
+        {
+            AnalysMove root = gameState.CurrentAnalysisNode;
+            while (root.PreviousMove != null) root = root.PreviousMove;
+
+            PGNTextBox.Text = root.PrintBranch();
 
         }
         private void ShowCheck()
         {
-
-            if (gameState.CurrentBoard.IsInCheck(gameState.CurrentPlayer))//если текущий игрок под шахом
+            if (gameState.CurrentBoard.IsInCheck(gameState.CurrentPlayer))
             {
-                Position pos = gameState.CurrentBoard.FindPiece(gameState.CurrentPlayer,PieceType.King);//находим позицию короля 
-                highLights[pos.Row, pos.Column].Fill = new SolidColorBrush(Color.FromRgb(234,83,69));//клетка окрашиваеся в красный
+                Position pos = gameState.CurrentBoard.FindPiece(gameState.CurrentPlayer,PieceType.King);
+                highLights[pos.Row, pos.Column].Fill = new SolidColorBrush(Color.FromRgb(234,83,69));
             }
         }
         private void BoardGrid_MouseDown(object sender,MouseButtonEventArgs e)//нажатие на сетку
@@ -185,36 +210,42 @@ namespace ChessUI
             Point point = e.GetPosition(BoardGreed);
             Position pos = ToSquarePosition(point);
 
-            if (selectedPos == null)//если ничего не выбрано
+            if (selectedPos == null)
             {
                 OnFromPositionSelected(pos);
             }
-            else//если что-то выбрано
+            else
             {
                 OnToPositionSelected(pos);
             }
         }
-        
 
-        private Position ToSquarePosition(Point point)//метод для определения нажатого квадрата
+
+        private Position ToSquarePosition(Point point)
         {
             double squareSize = BoardGreed.ActualWidth / 8;
-            int row = (int)(point.Y / squareSize);
-            int col = (int)(point.X / squareSize);
-            return new Position(row, col);
+            int r = (int)(point.Y / squareSize); 
+            int c = (int)(point.X / squareSize); 
+
+            if (isBoardReversed)
+            {
+                return new Position(7 - r, 7 - c); 
+            }
+
+           
+            return new Position(r, c);
         }
-        private void CacheMoves(IEnumerable<Move> moves)//ходы для 
+
+
+        private void CacheMoves(IEnumerable<Move> moves)
         {
             moveCache.Clear();
             foreach (Move move in moves)
             {
-                moveCache[move.ToPos] = move;//все to pos ставим пустое значение
+                moveCache[move.ToPos] = move;
             }
         }
-        private void FillFENTextBox()
-        {
-            FENTextBox.Text = gameState.analysMove.FenAfterMove.ToString();
-        }
+
         private void ShowHighlights()
         {
             Color color = Color.FromArgb(150,125,255,125);
@@ -228,28 +259,31 @@ namespace ChessUI
         {
             foreach (Position to in moveCache.Keys)
             {
-                highLights[to.Row, to.Column].Fill = Brushes.Transparent;//все клетки прозрачные
+                highLights[to.Row, to.Column].Fill = Brushes.Transparent;
             }
             ShowLastMoves();
         }        
         private void ShowLastMoves()
         {
-            
-            if (gameState.analysMove.LastFrom != null) 
-                highLights[gameState.GetLastMoveFrom().Row, gameState.GetLastMoveFrom().Column].Fill = new SolidColorBrush(Color.FromArgb(159, 188, 255, 17));
-            if (gameState.analysMove.LastTo != null)
-                highLights[gameState.GetLastMoveTo().Row, gameState.GetLastMoveTo().Column].Fill = new SolidColorBrush(Color.FromArgb(159, 188, 255, 17));
 
+            var node = gameState.CurrentAnalysisNode;
+            if (node.LastFrom == null || node.LastTo == null) return;
+
+            HighlightLogicalSquare(node.LastFrom, new SolidColorBrush(Color.FromArgb(159, 188, 255, 17)));
+            HighlightLogicalSquare(node.LastTo, new SolidColorBrush(Color.FromArgb(159, 188, 255, 17)));
         }
+        private void HighlightLogicalSquare(Position pos, Brush brush)
+        {
+            int r = isBoardReversed ? 7 - pos.Row : pos.Row;
+            int c = isBoardReversed ? 7 - pos.Column : pos.Column;
+            highLights[r, c].Fill = brush;
+        }
+
         private bool IsMenuOnScreen()
         {
             return MenuContainer.Content != null;
         }
-        private void NotifyEndOfGame()
-        {
-            gameState.analysMove.UserComment = gameState.Result.ToString();
 
-        }
         private void RestartGame()
         {
             selectedPos = null;
@@ -278,16 +312,16 @@ namespace ChessUI
             }
         }
 
-        private void FromFENToPosition()//если вводится новая нотация, то меняется всё состояние игры
+        private void FromFENToPosition()
         {
-            gameState.analysMove.FenAfterMove.Position = FENTextBox.Text;
-            gameState.FromFenToGameBoard();
+            gameState.CurrentAnalysisNode.FenAfterMove.Position = FENTextBox.Text;
             DrawBoard(gameState.CurrentBoard);
         }
-        private void FromFENToStartPosition()//если вводится новая нотация, то меняется всё состояние игры
+
+        private void FromFENToStartPosition()
         {
-            gameState.analysMove = new AnalysMove(FENTextBox.Text);
-            gameState.FromFenToGameBoard();
+            gameState = new GameState(Player.White, Board.Initial());
+            gameState.CurrentAnalysisNode.FenAfterMove.Position = FENTextBox.Text;
             DrawBoard(gameState.CurrentBoard);
         }
         private void ShowPauseMenu()
@@ -297,7 +331,7 @@ namespace ChessUI
 
             pauseMenu.OptionSelected += option =>
             {
-                MenuContainer.Content = null;//скрываем главное окно
+                MenuContainer.Content = null;
                 if (option == Option.Restart)
                 {
                     RestartGame();
@@ -311,42 +345,38 @@ namespace ChessUI
         }
         private void ReversBoard()
         {
-            gameState.GameStateReversBoard();
-            if (GameState.WatchFromWhite)
-                BoardGreed.Background = new ImageBrush(new BitmapImage(new Uri(BaseUriHelper.GetBaseUri(this), "Assets/boardw.png")));
-            else
-            {
-                BoardGreed.Background = new ImageBrush(new BitmapImage(new Uri(BaseUriHelper.GetBaseUri(this), "Assets/boardb.png")));
-            }
-            DrawBoard(gameState.CurrentBoard);
-            ShowLastMoves();
+            isBoardReversed = !isBoardReversed;
+
+            string asset = isBoardReversed ? "boardb.png" : "boardw.png";
+            BoardGreed.Background = new ImageBrush(new BitmapImage(new Uri($"pack://application:,,,/Assets/{asset}")));
+            FillAllInformationAboutMove();
         }
 
-        private void BackButton_Click(object sender, RoutedEventArgs e)//кнопка возврата к предыдущему ходу
-        {
 
-            if (gameState.analysMove.PreviousMove != null)//смотрим предыдущий ход 
-            { 
-                gameState.analysMove = gameState.analysMove.PreviousMove;
-                gameState.CheckForGameOver();
+        private void BackButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (gameState.CurrentAnalysisNode.PreviousMove != null)
+            {
+                gameState.SetMoveByNumber(gameState.CurrentAnalysisNode.PreviousMove.Number);
                 FillAllInformationAboutMove();
             }
-
         }
+
+
         private void ForwardButton_Click(object sender, RoutedEventArgs e)//кнопка перехода к следующему ходу
         {
-            if (gameState.analysMove.NextMoves.Any()) //смотрим следующий ход 
-            { 
-                gameState.analysMove = gameState.analysMove.NextMoves[0];
-                gameState.CheckForGameOver();
+            if (gameState.CurrentAnalysisNode.PreviousMove != null)
+            {
+                gameState.SetMoveByNumber(gameState.CurrentAnalysisNode.Number + 1);
                 FillAllInformationAboutMove();
             }
         }
+
         private void RefreshAnalysMoves()
         {
             AnalysWrapPanel.Children.Clear();
 
-            AnalysMove startAnalysMove = gameState.analysMove;
+            AnalysMove startAnalysMove = gameState.CurrentAnalysisNode;
             while (startAnalysMove.PreviousMove != null)//возвращаемся к первому элементу
             {
                 startAnalysMove = startAnalysMove.PreviousMove;
@@ -408,7 +438,6 @@ namespace ChessUI
                             label.BorderBrush = System.Windows.Media.Brushes.White;
                             label.Background = System.Windows.Media.Brushes.White;
                             label.Content = ")";
-                            //label.IsEnabled = false;
                             AnalysWrapPanel.Children.Add(label);
                         }
                     }
@@ -421,26 +450,21 @@ namespace ChessUI
                 }
 
             }
-
-
         }
 
-        private void AnalysMoveButton_Click(object sender, RoutedEventArgs e) //Event which will be triggerd on click of ya button
+        private void AnalysMoveButton_Click(object sender, RoutedEventArgs e)
         {
-
             var button = sender as Button;
-            string NameButton = button.Name;
-            BestMovesButtonsEnabled();
-            NameButton = NameButton.Substring(1);//work
-            int NumbButton = Convert.ToInt32(NameButton);
-            gameState.SetMoveByNumber(NumbButton);
-            //gameState.analysMove = gameState.analysMove.SearchMove(NumbButton);
-            //CommentTextBox.Text = gameState.analysMove.UserComment;
-            FillAllInformationAboutMove();
-            FillPGN();
+            if (button == null) return;
 
+            int moveNumber = int.Parse(button.Name.Substring(1));
+
+            gameState.SetMoveByNumber(moveNumber);
+            FillAllInformationAboutMove();
+
+            PaintButton(gameState.CurrentAnalysisNode);
         }
-        
+
         private void PaintButton(AnalysMove analysMove)
         {
             foreach (Button but in AnalysWrapPanel.Children)
@@ -451,48 +475,37 @@ namespace ChessUI
 
             if (a != null) a.Background = new SolidColorBrush(Color.FromArgb(255,200,223,244)); //System.Windows.Media.Brushes.; 
         }
-        private void ComputerMoveButton_Click(object sender, RoutedEventArgs e) //выполнение лучшего шахматного хода
+        private void ComputerMoveButton_Click(object sender, RoutedEventArgs e)
         {
-            try 
+            try
             {
-                if (First.IsEnabled == true)
+                if (First.IsEnabled)
                 {
-                    string result = First.Name;//лучший ход
+                    string moveSan = First.Name; 
 
-                    this.First.IsEnabled = false;
-
-                    this.Second.IsEnabled = false;
-
-                    this.Third.IsEnabled = false;
-
-                    gameState.MakeComputerMove(result);
-                    FillPGN();//запись хода
-                    RefreshAnalysMoves();
-                    FillAllInformationAboutMove();
+                    UpdateUI();
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                MessageBox.Show("Ошибка! Повторите попытку");
+                MessageBox.Show($"Ошибка хода движка: {ex.Message}");
             }
-                
-           
         }
         private void FilledCommentTextBox()
         {
-            CommentTextBox.Text = gameState.analysMove.UserComment;
-            Keyboard.ClearFocus();
+            CommentTextBox.Text = gameState.CurrentAnalysisNode.UserComment;
         }
+
         private void CommentTextBox_Changed(object sender, TextChangedEventArgs e)
         {
-            if (gameState!=null)
+            if (gameState?.CurrentAnalysisNode != null)
             {
-                gameState.analysMove.UserComment = CommentTextBox.Text;
+                gameState.CurrentAnalysisNode.UserComment = CommentTextBox.Text;
+                // Обновляем PGN, так как комментарии — его часть
                 FillPGN();
             }
-                
         }
-        
+
         private string SetEvalFromStr(string str,Player CurrentPlayer)
         {
             string res = "";
@@ -596,7 +609,7 @@ namespace ChessUI
         {
             try
             {
-                return stockfish.GetBestMoves(gameState.analysMove.FenAfterMove.Position);
+                return stockfish.GetBestMoves(gameState.CurrentAnalysisNode.FenAfterMove.Position);
             }
             catch
             {
@@ -613,32 +626,16 @@ namespace ChessUI
 
             return point;
         }
-        private void MouseEnter(object sender, MouseEventArgs e)//событие наведения мыши на second 
+        private void MouseEnter(object sender, MouseEventArgs e)
         {
-            var button = sender as Button;
-            string NameButton = button.Name;
-            Position to ;
-            Position from;
-            if (NameButton.Length==4)
+            if (sender is Button button && button.Name.Length >= 4)
             {
-                from = gameState.FromStrToPos(NameButton.Substring(0, 2));
-                to = gameState.FromStrToPos(NameButton.Substring(NameButton.Length - 2, 2));
-            }
-            else
-            {
-                from = gameState.FromStrToPos(NameButton.Substring(0, 2));
-                to = gameState.FromStrToPos(NameButton.Substring(NameButton.Length - 3, 2));
+                // Используем ChessParser вместо старого FromStrToPos
+                Position from = MoveParser.ToPosition(button.Name.Substring(0, 2));
+                Position to = MoveParser.ToPosition(button.Name.Substring(button.Name.Length - 2, 2));
 
-            }
-            try
-            {
                 MakeArrow(from, to);
             }
-            catch 
-            {
-                BestMovesButtonsEnabled();
-            }
-            
         }
         private void MakeArrow(Position from,Position to)
         {
@@ -710,62 +707,40 @@ namespace ChessUI
 
             this.Third.IsEnabled = false;
         }
-        private void MouseClick(object sender, RoutedEventArgs e)//нажатие на одну из кнопок с лучшим ходом
+        private void MouseClick(object sender, RoutedEventArgs e)
         {
-            var button = sender as Button;
-            string NameButton = button.Name;
-                BestMovesButtonsEnabled();
-            try 
-            { 
-                gameState.MakeComputerMove(NameButton);//выполнение хода предложенным компьютером
-            }
-            catch
+            if (sender is Button button)
             {
-                MessageBox.Show("Ошибка! Повторите попытку");
+                string moveStr = button.Name; // Здесь обычно лежит ход в формате "e2e4"
+                BestMovesButtonsEnabled();
+
+                try
+                {
+                    gameState.MakeMove(moveStr); 
+                    UpdateUI();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Не удалось выполнить ход компьютера: {ex.Message}");
+                }
             }
-                FillPGN();//запись хода
-                RefreshAnalysMoves();
-                FillAllInformationAboutMove();
-            
         }
         private void SaveFile()
         {
-            if (path!="")
+            AnalysMove root = gameState.CurrentAnalysisNode;
+            while (root.PreviousMove != null) root = root.PreviousMove;
+            string pgnOutput = root.PrintBranch();
+
+            if (string.IsNullOrEmpty(path))
             {
-                AnalysMove currentMove = gameState.analysMove;
-                while (currentMove.PreviousMove != null)//переход к первому ходу партии
-                {
-                    currentMove = currentMove.PreviousMove;
-                }
-                if (FenNotation.IsStartPosition(currentMove.FenAfterMove.Position))//если начальная позиция
-                {
-                    System.IO.File.WriteAllText(path, PGNTextBox.Text);
-                }
-                else//если нет, то записываем в файл позицию с которой всё начиналось
-                {
-                    string startFEN = currentMove.FenAfterMove.Position;
-                    System.IO.File.WriteAllText(path, string.Empty);
-                    System.IO.File.AppendAllText(path, "[Variant \"From Position\"]\n");
-                    startFEN = "[FEN \"" + startFEN + "\"]\n";
-                    System.IO.File.AppendAllText(path, startFEN);
-                    System.IO.File.AppendAllText(path, PGNTextBox.Text);
-                }
+                SaveFileDialog dlg = new SaveFileDialog { Filter = "PGN files (*.pgn)|*.pgn|Text files (*.txt)|*.txt" };
+                if (dlg.ShowDialog() == true) path = dlg.FileName;
+                else return;
             }
-            else
-            {
-                Microsoft.Win32.SaveFileDialog dlg = new Microsoft.Win32.SaveFileDialog();
-                dlg.FileName = "Document"; // Default file name
-                dlg.DefaultExt = ".text"; // Default file extension
-                dlg.Filter = "Text documents (.txt)|*.txt"; // Filter files by extension
-                Nullable<bool> result = dlg.ShowDialog();
-                if (result == true)
-                {
-                    path = dlg.FileName;
-                }
-            }
-            
+
+            File.WriteAllText(path, pgnOutput);
         }
-        private void SaveButton_Click(object sender, RoutedEventArgs e)//сохранение по выбранному пути
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             SaveFile();
             if(path!="")MessageBox.Show("Файл сохранен");
@@ -805,27 +780,20 @@ namespace ChessUI
         }
         private void OpenFileDialog()
         {
-            OpenFileDialog fileDialog = new OpenFileDialog();
-            fileDialog.Filter = "Text documents (.txt)|*.txt;*.pgn";
-            fileDialog.Title = "Выберите анализ...";
-            bool? success = fileDialog.ShowDialog();
-            if (success == true)
+            OpenFileDialog fileDialog = new OpenFileDialog { Filter = "Chess Analysis (*.pgn;*.txt)|*.pgn;*.txt" };
+            if (fileDialog.ShowDialog() == true)
             {
                 try
                 {
-
                     path = fileDialog.FileName;
-                    string textFromFile = File.ReadAllText(path);//текст из файла
-                    gameState.GameStateFromStr(textFromFile);
-                    FillPGN();
-                    FillAllInformationAboutMove();
-                    RefreshAnalysMoves();
-                }
-                catch
-                {
-                    MessageBox.Show("Ошибка! Неверное содержание файла");
-                }
+                    string content = File.ReadAllText(path);
 
+                    UpdateUI();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Ошибка загрузки: {ex.Message}");
+                }
             }
         }
         private void NewFileMake_Click(object sender, RoutedEventArgs e)

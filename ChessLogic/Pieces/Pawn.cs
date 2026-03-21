@@ -1,120 +1,63 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using ChessLogic;
 
-namespace ChessLogic
+public class Pawn : Piece
 {
-    public class Pawn : Piece
+    public override PieceType Type => PieceType.Pawn;
+    public override Player Color { get; set; }
+    private readonly Direction moveDir;
+
+    public Pawn(Player color, bool hasMoved = false)
     {
-        public override PieceType Type => PieceType.Pawn;//override - переназначенный тип базового класса
-        public override Player Color { get; set; }
+        Color = color;
+        HasMoved = hasMoved;
+        // Белые идут к 0 ряду (North), черные к 7 ряду (South)
+        moveDir = (color == Player.White) ? Direction.North : Direction.South;
+    }
 
-        private readonly Direction moveDirection;
+    public override Piece Copy() => new Pawn(Color, HasMoved);
 
-        public Pawn(Player color, bool hasMoved = false)
+    private IEnumerable<Move> ForwardMoves(Position from, Board board)
+    {
+        Position oneStep = from + moveDir;
+        if (!Board.IsInside(oneStep) || !board.IsEmpty(oneStep)) yield break;
+
+        if (oneStep.Row == 0 || oneStep.Row == 7) // Ряды превращения
+            foreach (var m in PromotionMoves(from, oneStep)) yield return m;
+        else
+            yield return new NormalMove(from, oneStep);
+
+        Position twoSteps = oneStep + moveDir;
+        if (!HasMoved && Board.IsInside(twoSteps) && board.IsEmpty(twoSteps))
+            yield return new DoublePawn(from, twoSteps);
+    }
+
+    private IEnumerable<Move> DiagonalMoves(Position from, Board board)
+    {
+        foreach (var sideDir in new[] { Direction.West, Direction.East })
         {
-            Color = color;
-            HasMoved = hasMoved;
-            if (GameState.WatchFromWhite == color is Player.White)
-                moveDirection = Direction.North;
-            else
-                moveDirection = Direction.South;
-        }
-        public override Piece Copy()
-        {
-            return new Pawn(Color, HasMoved);
-        }
-        private static bool CanMoveTo(Position pos, Board board)
-        {
-            return Board.IsInside(pos) && board.IsEmpty(pos);//метод на движение вперед пешки(можно идти только если никого нет)
-        }
-        private bool CanCaptureAt(Position pos,Board board)
-        {
-            if (!Board.IsInside(pos)||board.IsEmpty(pos))
+            Position to = from + moveDir + sideDir;
+            if (!Board.IsInside(to)) continue;
+
+            if (to == board.GetPawnSkipPosition(Color.Opponent()))
+                yield return new EnPassant(from, to);
+            else if (!board.IsEmpty(to) && board[to].Color != Color)
             {
-                return false;
-            }
-            return board[pos].Color != Color;
-        }
-
-        private static IEnumerable<Move> PromotionMoves(Position from,Position to)
-        {
-            yield return new PawnPromotion(from,to,PieceType.Knight);
-            yield return new PawnPromotion(from, to, PieceType.Rook);
-            yield return new PawnPromotion(from, to, PieceType.Bishop);
-            yield return new PawnPromotion(from, to, PieceType.Queen);
-
-        }
-
-        private IEnumerable<Move> ForwardMoves(Position from,Board board)
-        {
-            Position oneMovePos = from + moveDirection;
-            if (CanMoveTo(oneMovePos,board))
-            {
-                if(oneMovePos.IsPromotionRow())//если это клетки преращения
-                {
-                    foreach (Move promMove in PromotionMoves(from, oneMovePos))
-                    {
-                        yield return promMove;
-                    }
-                }
+                if (to.Row == 0 || to.Row == 7)
+                    foreach (var m in PromotionMoves(from, to)) yield return m;
                 else
-                {
-                    yield return new NormalMove(from, oneMovePos);
-                }                
-                Position twoMovePos = oneMovePos + moveDirection;
-                if(!HasMoved && CanMoveTo(twoMovePos, board))//двойной ход только если до этого не двигалась и при этом можо сходить на 2 клетки
-                {
-                    yield return new DoublePawn(from,twoMovePos);
-                }
-
+                    yield return new NormalMove(from, to);
             }
         }
-        private IEnumerable<Move> DiagonalMoves(Position from,Board board)
-        {
-            foreach(Direction dir in new Direction[] {Direction.West,Direction.East })
-            {
-                Position to = from + moveDirection + dir;
+    }
 
-                if (to == board.GetPawnSkipPosition(Color.Opponent()))
-                {
-                    yield return new EnPassant(from, to);
+    public override IEnumerable<Move> GetMoves(Position from, Board board)
+        => ForwardMoves(from, board).Concat(DiagonalMoves(from, board));
 
-                }
-                else if (CanCaptureAt(to, board))//если можно бить по диагонали
-                {
-                    if (to.IsPromotionRow())//если это клетки преращения
-                    {
-                        foreach (Move promMove in PromotionMoves(from, to))
-                        {
-                            yield return promMove;
-                        }
-                    }
-                    else
-                    {
-                        yield return new NormalMove(from, to);
-                    }
-                }
-            }
-        }
-        public override IEnumerable<Move> GetMoves(Position from,Board board)
-        {
-            IEnumerable<Move> forwardMoves = ForwardMoves(from, board);
-            IEnumerable<Move> diagonalMoves = DiagonalMoves(from, board);
-            return forwardMoves.Concat(diagonalMoves);
-            //return ForwardMoves(from, board).Concat(DiagonalMoves(from,board));//все ходы пешки, это передние ходы + диагональные
-
-        }
-
-        public override bool CanCaptureOpponentKing(Position from, Board board)
-        {
-            return DiagonalMoves(from, board).Any(move => 
-            {
-                Piece piece = board[move.ToPos];
-                return piece!=null && piece.Type == PieceType.King;
-            }) ;
-        }
+    private static IEnumerable<Move> PromotionMoves(Position from, Position to)
+    {
+        yield return new PawnPromotion(from, to, PieceType.Queen);
+        yield return new PawnPromotion(from, to, PieceType.Rook);
+        yield return new PawnPromotion(from, to, PieceType.Bishop);
+        yield return new PawnPromotion(from, to, PieceType.Knight);
     }
 }

@@ -57,7 +57,7 @@ namespace ChessLogic
                         }
                         else
                         {
-                        Piece piece = Piece.FromCharToPiece(sb[i]);
+                        Piece piece = new Pawn(Player.Black);
                         switch (piece)
                         {
                             case Pawn:
@@ -138,11 +138,11 @@ namespace ChessLogic
             }
             Player CurrentPlayer = current;
             Board CurrentBoard = board;
-            if (GameState.WatchFromWhite) CurrentBoard = board;
+            /*if (GameState.WatchFromWhite) CurrentBoard = board;
             else
             {
                 CurrentBoard = board.ReversBoard(false);
-            }
+            }*/
             return new GameState(CurrentPlayer, CurrentBoard);
         }
 

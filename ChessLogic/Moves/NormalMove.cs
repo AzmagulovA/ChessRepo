@@ -20,6 +20,7 @@ namespace ChessLogic
         public override bool Execute(Board board)
         {
             Piece piece = board[FromPos];
+            if (piece == null) return false;
             bool capture = !board.IsEmpty(ToPos);
             board[ToPos] = piece;
             board[FromPos] = null;

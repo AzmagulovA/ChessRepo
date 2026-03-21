@@ -27,6 +27,7 @@ namespace ChessLogic
         {
             return sb.ToString();
         }
+
         private static char PieceChar(Piece piece)
         {
             char c = piece.Type switch
@@ -46,7 +47,7 @@ namespace ChessLogic
             }
             return c;
         }
-       
+
         private void AddRowData(Board board, int row, bool FromWhite)
         {
             int empty = 0;
@@ -85,6 +86,7 @@ namespace ChessLogic
                     AddRowData(board, r,FromWhite);
                 }
         }
+
         private void AddCurrentPlayer(Player currentPlayer)
         {
             if (currentPlayer == Player.White)
@@ -129,16 +131,14 @@ namespace ChessLogic
 
         private void AddEnPassant(Board board, Player currentPlayer)
         {
-            if (!board.CanCaptureEnPassant(currentPlayer))
+            Position skipPos = board.GetPawnSkipPosition(currentPlayer.Opponent());
+
+            if (skipPos == null)
             {
                 sb.Append('-');
                 return;
             }
-            Position pos = board.GetPawnSkipPosition(currentPlayer.Opponent());
-            char file = (char)('a' + pos.Column);
-            int rank = 8 - pos.Row;
-            sb.Append(file);
-            sb.Append(rank);
+            sb.Append(MoveParser.ToCoords(skipPos));
         }
     }
 }

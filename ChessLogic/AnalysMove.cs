@@ -63,40 +63,53 @@ namespace ChessLogic
         }
         public string PrintBranch()
         {
-            bool mainOpt = true;
-            AnalysMove mainBranch = null;
-            if (NextMoves.Count > 0) //если есть последующие ходы
+            if (NextMoves.Count == 0)
+                return string.Empty;
+
+            StringBuilder sb = new StringBuilder();
+            AnalysMove mainLine = NextMoves[0];
+
+            // 1. Печатаем основной ход текущей ветки
+            sb.Append(mainLine.PrintMove());
+
+            // 2. Если есть альтернативные варианты, выводим их в скобках
+            if (NextMoves.Count > 1)
             {
-                string res = "";
-                foreach (AnalysMove futureMove in NextMoves)//проходимся по каждому из них
+                for (int i = 1; i < NextMoves.Count; i++)
                 {
-                    if (NextMoves.Count == 1)
-                    {
-                        res = res + futureMove.PrintMove() + " ";
-                        res = res + futureMove.PrintBranch();
-                    }
-                    if (NextMoves.Count > 1)
-                    {
-                        if (!mainOpt) res = res + " (";//если ветка неосновная, то включаем её в скобки
-                        res = res + futureMove.PrintMove() + " ";//печатаем текущий ход
-                        if (mainOpt) mainBranch = futureMove;//если основная ветка, то сохраняем чтобы вывести ее позже
-                        if (!mainOpt) res = res + futureMove.PrintBranch();//рекурсия, если ветка не главная, то печатаем ее до конца
-                        if (!mainOpt) res = res + ") ";
-                    }
-                    mainOpt = false;
+                    // Перед альтернативным ходом черных в скобках нужно ставить номер и многоточие (напр. 1... e5)
+                    string prefix = NextMoves[i].WhiteMove() ? "" : $"{NextMoves[i].MoveNumb}... ";
+                    sb.Append($" ({prefix}{NextMoves[i].PrintMove()} {NextMoves[i].PrintBranch()})");
                 }
-
-                if (mainBranch != null) res = res + mainBranch.PrintBranch();
-
             }
-            return string.Empty;
+
+            // 3. Продолжаем основную линию
+            string remainingMainLine = mainLine.PrintBranch();
+            if (!string.IsNullOrEmpty(remainingMainLine))
+            {
+                // Если следующий ход — ход белых, добавляем номер хода для читаемости
+                if (mainLine.NextMoves.Count > 0 && mainLine.NextMoves[0].WhiteMove())
+                {
+                    sb.Append(" ");
+                }
+                sb.Append(" " + remainingMainLine);
+            }
+
+            return sb.ToString().Trim();
         }
+
         public string PrintMove()
         {
-            if (string.IsNullOrEmpty(UserComment))//если не пусто
-                return MoveName;
-            else
-                return string.Concat(MoveName, " {" + UserComment + "} ");
+            // Если это ход белых, добавляем номер (1. e4)
+            // Если это первый ход в ветке за черных, добавляем (1... e5)
+            string prefix = "";
+            if (WhiteMove())
+            {
+                prefix = $"{MoveNumb}. ";
+            }
+
+            string comment = string.IsNullOrEmpty(UserComment) ? "" : $" {{{UserComment}}}";
+            return $"{prefix}{MoveName}{comment}";
         }
 
         public AnalysMove SearchMove(int numb)

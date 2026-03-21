@@ -8,7 +8,7 @@ namespace ChessLogic
 {
     public class King:Piece
     {
-        public override PieceType Type => PieceType.King;//override - переназначенный тип базового класса
+        public override PieceType Type => PieceType.King;
         public override Player Color { get; set; }
         private static readonly Direction[] dirs = new Direction[]
         {
@@ -27,62 +27,36 @@ namespace ChessLogic
             HasMoved = hasMoved;
 
         }
-        private static bool IsUnMovedRook(Position pos,Board board)
-        {
-            if (board.IsEmpty(pos))
-            {
-                return false;
-            }
-            Piece piece = board[pos];
-            return piece.Type == PieceType.Rook && !piece.HasMoved;
-        }
 
         private static bool AllEmpty(IEnumerable<Position> positions,Board board)
         {
             return positions.All(pos=> board.IsEmpty(pos));
         }
-        private bool CanCastleKingSide(Position from,Board board)
-        {
-            if (HasMoved)
-            {
-                return false;
-            }
-            Position rookPos;
-            Position[] beetweePositions;
-            if (GameState.WatchFromWhite) {
-                rookPos = new Position(from.Row, 7);
-                beetweePositions = new Position[] { new(from.Row, 5), new(from.Row, 6) }; 
-            }
-            else
-            {
-                rookPos = new Position(from.Row, 0);
-                beetweePositions = new Position[] { new(from.Row, 1), new(from.Row, 2) };
-            }
 
-            return IsUnMovedRook(rookPos,board)&&AllEmpty(beetweePositions,board);
+        private bool CanCastleKingSide(Position from, Board board)
+        {
+            if (HasMoved) return false;
+            // Короткая рокировка: для белых это h1 (7,7), для черных h8 (0,7)
+            Position rookPos = new Position(from.Row, 7);
+            var between = new[] { new Position(from.Row, 5), new Position(from.Row, 6) };
+            return IsUnMovedRook(rookPos, board) && between.All(board.IsEmpty);
         }
+
         private bool CanCastleQueenSide(Position from, Board board)
         {
-            if (HasMoved)
-            {
-                return false;
-            }
-            Position rookPos;
-            Position[] betweenPositions;
-            if (GameState.WatchFromWhite)
-            {
-                rookPos = new Position(from.Row, 0);
-                betweenPositions = new Position[] { new(from.Row, 1), new(from.Row, 2), new(from.Row, 3) };
-            }
-            else
-            {
-                rookPos = new Position(from.Row, 7);
-                betweenPositions = new Position[] { new(from.Row, 4), new(from.Row, 5), new(from.Row, 6) };
-            }
-            
-
-            return IsUnMovedRook(rookPos,board)&&AllEmpty(betweenPositions,board);
+            if (HasMoved) return false;
+            // Длинная рокировка: для белых a1 (7,0), для черных a8 (0,0)
+            Position rookPos = new Position(from.Row, 0);
+            var between = new[] { new Position(from.Row, 1), new Position(from.Row, 2), new Position(from.Row, 3) };
+            return IsUnMovedRook(rookPos, board) && between.All(board.IsEmpty);
         }
+
+        private static bool IsUnMovedRook(Position pos, Board board)
+        {
+            Piece p = board[pos];
+            return p != null && p.Type == PieceType.Rook && !p.HasMoved;
+        }
+
         public override Piece Copy()
         {
             return new King(Color, HasMoved);
@@ -120,7 +94,6 @@ namespace ChessLogic
         }
         public override bool CanCaptureOpponentKing(Position from, Board board)
         {
-            
             return MovePositions(from, board).Any(to =>
             {
                 Piece piece = board[to];

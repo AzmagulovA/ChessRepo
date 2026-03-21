@@ -164,13 +164,13 @@ namespace ChessUI
         }
         private void FillFENTextBox()
         {
-            Board.FillCastles((bool)WKCastleCheckBox.IsChecked, (bool)WQCastleCheckBox.IsChecked, (bool)BKCastleCheckBox.IsChecked, (bool)BQCastleCheckBox.IsChecked);
-            FENTextBox.Text = new StateString(CurrentPlayer, Board, WatchFromWhite).ToString();
-            if (Board.RightBoard(CurrentPlayer)) SetPosButton.IsEnabled = true;
-            else
-            {
-                SetPosButton.IsEnabled = false;
-            }
+            //Board.FillCastles((bool)WKCastleCheckBox.IsChecked, (bool)WQCastleCheckBox.IsChecked, (bool)BKCastleCheckBox.IsChecked, (bool)BQCastleCheckBox.IsChecked);
+            //FENTextBox.Text = new StateString(CurrentPlayer, Board, WatchFromWhite).ToString();
+            //if (Board.RightBoard(CurrentPlayer)) SetPosButton.IsEnabled = true;
+            //else
+            //{
+            //    SetPosButton.IsEnabled = false;
+            //}
         }
         private void SetPosButton_Click(object sender, RoutedEventArgs e)
         {
@@ -255,7 +255,7 @@ namespace ChessUI
             {
                 BoardGreed.Background = new ImageBrush(new BitmapImage(new Uri(BaseUriHelper.GetBaseUri(this), "Assets/boardb.png")));
             }
-            Board = Board.ReversBoard(WatchFromWhite);
+            //Board = Board.ReversBoard(WatchFromWhite);
             DrawBoard(Board);
             FillFENTextBox();
         }

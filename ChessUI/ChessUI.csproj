@@ -41,7 +41,6 @@
     <None Remove="Assets\wQueen.png" />
     <None Remove="Assets\wrook.png" />
     <None Remove="Assets\wrook2.png" />
-	 <None Remove="Assets\wrook2.png" />
 	 <None Remove="Engines\stockfish.exe" />
   </ItemGroup>
 
@@ -86,7 +85,6 @@
     <Resource Include="Assets\wQueen.png" />
     <Resource Include="Assets\wrook.png" />
     <Resource Include="Assets\wrook2.png" />
-	<Resource Include="Assets\wrook2.png" />
   </ItemGroup>
 
   <ItemGroup>
